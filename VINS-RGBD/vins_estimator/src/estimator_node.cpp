@@ -4,12 +4,15 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/filters/voxel_grid.h>
+#include "estimator.h"
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
-#include <pcl_conversions/pcl_conversions.h>
 
-#include "estimator.h"
+
+
 #include "parameters.h"
 #include "utility/visualization.h"
 
@@ -379,10 +382,14 @@ void process()
                 xyz_uv_velocity_depth << x, y, z, p_u, p_v, velocity_x, velocity_y, depth;
                 image[feature_id].emplace_back(camera_id,  xyz_uv_velocity_depth);
             }
-
-            pcl::PointCloud<pcl::PointXYZ>::Ptr points;
+            pcl::PointCloud<pcl::PointXYZ>::Ptr points = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+            pcl::PointCloud<pcl::PointXYZ>::Ptr filteredCloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
             pcl::fromROSMsg(*point_msg, *points);
-            estimator.processImage(image, img_msg->header, points);
+            pcl::VoxelGrid<pcl::PointXYZ> filter;
+            filter.setInputCloud(points);
+            filter.setLeafSize(0.1f, 0.1f, 0.1f);
+            filter.filter(*filteredCloud);
+            estimator.processImage(image, img_msg->header, filteredCloud);
             double whole_t = t_s.toc();
 
             printStatistics(estimator, whole_t);

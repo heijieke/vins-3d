@@ -2,6 +2,7 @@
 
 DepthFactor::DepthFactor(const pcl::PointCloud<pcl::PointXYZ> &p_i,const pcl::PointCloud<pcl::PointXYZ> &p_j) : pl_i(p_i), pl_j(p_j)
 {
+    p_in = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     *p_in = pl_j;
     TicToc tic_toc;
     kdtree.setInputCloud (p_in);
@@ -38,19 +39,19 @@ bool DepthFactor::Evaluate(double const *const *parameters, double *residuals, d
     transform.rotate(qic.inverse());
     pcl::transformPointCloud(pl_wj, pl_bj, transform);
     Eigen::Map<Eigen::Vector3d> residual(residuals);
+    residual.setZero();
     
-    double radius = 2; //单位mm
+    double radius = 10; //单位mm
     std::vector<int> pointIdxSearch;
     std::vector<float> pointSquaredDistance;
     TicToc tic_toc;
 
     for(auto point : pl_bj){
         if(kdtree.nearestKSearch(point, 1, pointIdxSearch, pointSquaredDistance) > 0 && pointSquaredDistance[0] < radius){
-            residual +=  Eigen::Vector3d(
-                (*p_in)[pointIdxSearch[0]].x - point.x, 
-                (*p_in)[pointIdxSearch[0]].y - point.y,
-                (*p_in)[pointIdxSearch[0]].z - point.z
-                                            );
+            double d_x = (*p_in)[pointIdxSearch[0]].x - point.x;
+            double d_y = (*p_in)[pointIdxSearch[0]].y - point.y;
+            double d_z = (*p_in)[pointIdxSearch[0]].z - point.z;
+            residual +=  Eigen::Vector3d(d_x * d_x, d_y * d_y, d_z * d_z);
 
         }
     }

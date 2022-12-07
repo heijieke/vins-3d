@@ -22,8 +22,9 @@
 
 #include <unordered_map>
 #include <queue>
-#include <opencv2/core/eigen.hpp>
 #include <pcl/point_cloud.h>
+#include <opencv2/core/eigen.hpp>
+
 
 #include <sophus/se3.h>
 #include <sophus/so3.h>
@@ -106,7 +107,7 @@ class Estimator
     MotionEstimator m_estimator;
     InitialEXRotation initial_ex_rotation;
 
-    vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> pointlist;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pointlist[WINDOW_SIZE + 1];
 
     bool first_imu;
     bool is_valid, is_key;

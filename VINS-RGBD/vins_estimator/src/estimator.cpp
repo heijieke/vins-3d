@@ -4,7 +4,6 @@ Estimator::Estimator(): f_manager{Rs}
 {
     ROS_INFO("init begins");
     clearState();
-    pointlist.reserve(WINDOW_SIZE + 1);
 }
 
 void Estimator::setParameter()
@@ -881,13 +880,10 @@ void Estimator::optimization()
         ROS_DEBUG("prepare for ceres: %f", t_prepare.toc());
     }
 
-    if(pointlist.size() > WINDOW_SIZE){
-        for (int i = 0; i < WINDOW_SIZE; i++)
-        {
-            DepthFactor *d = new DepthFactor(*pointlist[i], *pointlist[i + 1]);
-            problem.AddResidualBlock(d, loss_function, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
-        }
-
+    for (int i = 0; i < WINDOW_SIZE; i++)
+    {
+        DepthFactor *d = new DepthFactor(*pointlist[i], *pointlist[i + 1]);
+        problem.AddResidualBlock(d, loss_function, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
     }
  
     if(relocalization_info)
@@ -1151,6 +1147,7 @@ void Estimator::slideWindow()
                 Vs[i].swap(Vs[i + 1]);
                 Bas[i].swap(Bas[i + 1]);
                 Bgs[i].swap(Bgs[i + 1]);
+                pointlist[i].swap(pointlist[i + 1]);
             }
             Headers[WINDOW_SIZE] = Headers[WINDOW_SIZE - 1];
             Ps[WINDOW_SIZE] = Ps[WINDOW_SIZE - 1];
@@ -1159,7 +1156,6 @@ void Estimator::slideWindow()
             Bas[WINDOW_SIZE] = Bas[WINDOW_SIZE - 1];
             Bgs[WINDOW_SIZE] = Bgs[WINDOW_SIZE - 1];
             pointlist[WINDOW_SIZE] = pointlist[WINDOW_SIZE - 1];
-            pointlist.erase(pointlist.begin());
 
             delete pre_integrations[WINDOW_SIZE];
             pre_integrations[WINDOW_SIZE] = new IntegrationBase{acc_0, gyr_0, Bas[WINDOW_SIZE], Bgs[WINDOW_SIZE]};
@@ -1211,7 +1207,6 @@ void Estimator::slideWindow()
             Bas[frame_count - 1] = Bas[frame_count];
             Bgs[frame_count - 1] = Bgs[frame_count];
             pointlist[frame_count - 1] = pointlist[frame_count];
-            pointlist.erase(pointlist.end());
 
             delete pre_integrations[WINDOW_SIZE];
             pre_integrations[WINDOW_SIZE] = new IntegrationBase{acc_0, gyr_0, Bas[WINDOW_SIZE], Bgs[WINDOW_SIZE]};

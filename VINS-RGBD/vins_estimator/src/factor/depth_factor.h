@@ -15,7 +15,7 @@ class DepthFactor : public ceres::SizedCostFunction<3, 7, 7, 7>
     DepthFactor(const pcl::PointCloud<pcl::PointXYZ> &p_i,const pcl::PointCloud<pcl::PointXYZ> &p_j);
     virtual bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const;
 
-    const pcl::PointCloud<pcl::PointXYZ> pl_i,pl_j;
+    pcl::PointCloud<pcl::PointXYZ> pl_i,pl_j;
     pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-    const pcl::PointCloud<pcl::PointXYZ>::Ptr p_in;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr p_in;
 };
