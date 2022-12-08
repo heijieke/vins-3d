@@ -32,6 +32,101 @@ bool first_image_flag = true;
 double last_image_time = 0;
 bool init_pub = 0;
 
+double blind = 0.1;
+int    group_size = 8;
+double disA = 0.01, disB = 0.1;
+int    g_LiDAR_sampling_point_step = 3;
+
+typedef pcl::PointXYZRGB PointType;
+
+enum Feature
+{
+    Nor,
+    Poss_Plane,
+    Real_Plane,
+    Edge_Jump,
+    Edge_Plane,
+    Wire,
+    ZeroPoint
+};
+enum Surround
+{
+    Prev,
+    Next
+};
+enum E_jump
+{
+    Nr_nor,
+    Nr_zero,
+    Nr_180,
+    Nr_inf,
+    Nr_blind
+};
+
+struct orgtype
+{
+    double  range;
+    double  dista;
+    double  angle[ 2 ];
+    double  intersect;
+    E_jump  edj[ 2 ];
+    Feature ftype;
+    orgtype()
+    {
+        range = 0;
+        edj[ Prev ] = Nr_nor;
+        edj[ Next ] = Nr_nor;
+        ftype = Nor;
+        intersect = 2;
+    }
+};
+
+void give_feature( pcl::PointCloud< PointType > &pl, vector< orgtype > &types, pcl::PointCloud< PointType > &pl_corn,
+                   pcl::PointCloud< PointType > &pl_surf )
+{
+    uint plsize = pl.size();
+    uint plsize2;
+    if ( plsize == 0 )
+    {
+        printf( "something wrong\n" );
+        return;
+    }
+    uint head = 0;
+    while ( types[ head ].range < blind )
+    {
+        head++;
+    }
+
+    // Surf
+    plsize2 = ( plsize > group_size ) ? ( plsize - group_size ) : 0;
+
+    Eigen::Vector3d curr_direct( Eigen::Vector3d::Zero() );
+    Eigen::Vector3d last_direct( Eigen::Vector3d::Zero() );
+
+    uint i_nex = 0, i2;
+    uint last_i = 0;
+    uint last_i_nex = 0;
+    int  last_state = 0;
+    int  plane_type;
+
+    PointType ap;
+    for ( uint i = head; i < plsize2; i += g_LiDAR_sampling_point_step )
+    {
+        if ( types[ i ].range > blind )
+        {
+            ap.x = pl[ i ].x;
+            ap.y = pl[ i ].y;
+            ap.z = pl[ i ].z;
+            ap.r = pl[ i ].r;
+            ap.g = pl[ i ].g;
+            ap.b = pl[ i ].b;
+            //ap.curvature = pl[ i ].curvature;
+            pl_surf.push_back( ap );
+        }
+
+    }
+}
+
 void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs::ImageConstPtr &depth_msg)
 {
     if(first_image_flag)
@@ -160,7 +255,7 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
         sensor_msgs::ChannelFloat32 depth_of_point;
 
         sensor_msgs::PointCloud2Ptr color_points(new sensor_msgs::PointCloud2);
-        pcl::PointCloud< pcl::PointXYZRGB > points;
+        pcl::PointCloud< pcl::PointXYZRGB > pl;
 
         feature_points->header = color_msg->header;
         feature_points->header.frame_id = "world";
@@ -200,11 +295,11 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
                 }
             }
 
-        
             // 生成彩色点云
-            points.reserve(1000000);
+            
             auto &cur_img = trackerData[i].cur_img;
             auto &cur_depth = trackerData[i].cur_depth;
+            pl.reserve(cur_img.rows * cur_img.cols);
             for(int v = 0; v < cur_img.rows; v++)
                 for(int u = 0; u < cur_img.cols; u++){
                     unsigned int d = cur_depth.ptr<unsigned int>(v)[u];
@@ -217,7 +312,7 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
                     point.g = cur_img.data[v * cur_img.step + u * cur_img.channels() + 1];
                     point.r = cur_img.data[v * cur_img.step + u * cur_img.channels() + 2];
 
-                    points.push_back(point);
+                    pl.push_back(point);
                 }
         }
         //debug use: print depth pixels
@@ -240,7 +335,25 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
         }
         else
         {
-          pcl::toROSMsg(points, *color_points);
+          pcl::PointCloud< PointType > pl_corn, pl_surf;
+          vector< orgtype >            types;
+          uint                         plsize = pl.size() - 1;
+          pl_corn.reserve( plsize );
+          pl_surf.reserve( plsize );
+          types.resize( plsize + 1 );
+          double vx,vy,vz;
+          for ( uint i = 0; i < plsize; i++ )
+          {
+            types[ i ].range = pl[ i ].x;
+            vx = pl[ i ].x - pl[ i + 1 ].x;
+            vy = pl[ i ].y - pl[ i + 1 ].y;
+            vz = pl[ i ].z - pl[ i + 1 ].z;
+            types[ i ].dista = vx * vx + vy * vy + vz * vz;
+          }
+          // plsize++;
+          types[ plsize ].range = sqrt( pl[ plsize ].x * pl[ plsize ].x + pl[ plsize ].y * pl[ plsize ].y );
+          give_feature( pl, types, pl_corn, pl_surf );
+          pcl::toROSMsg(pl_surf, *color_points);
           color_points->header = depth_msg->header;
           color_points->header.frame_id = "world";
           pub_points.publish(color_points);
