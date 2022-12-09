@@ -1,12 +1,7 @@
 #include "depth_factor.h"
 
-DepthFactor::DepthFactor(const pcl::PointCloud<pcl::PointXYZ> &p_i,const pcl::PointCloud<pcl::PointXYZ> &p_j) : pl_i(p_i), pl_j(p_j)
+DepthFactor::DepthFactor(const Eigen::Vector3d &p_i, const float pd2) : p_i(p_i), pd2(pd2)
 {
-    p_in = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-    *p_in = pl_j;
-    TicToc tic_toc;
-    kdtree.setInputCloud (p_in);
-    std::cout << "kdtree cost：" << tic_toc.toc() << std::endl;
 };
 
 bool DepthFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const{
@@ -20,42 +15,56 @@ bool DepthFactor::Evaluate(double const *const *parameters, double *residuals, d
     Eigen::Quaterniond qic(parameters[2][6], parameters[2][3], parameters[2][4], parameters[2][5]);
 
 
-    Eigen::Affine3d transform = Eigen::Affine3d::Identity();
-    transform.translation() = tic;
-    transform.rotate(qic);
-    pcl::PointCloud<pcl::PointXYZ> pl_bi;
-    pcl::PointCloud<pcl::PointXYZ> pl_wi;
-    pcl::PointCloud<pcl::PointXYZ> pl_wj;
-    pcl::PointCloud<pcl::PointXYZ> pl_bj;
 
-    pcl::transformPointCloud(pl_i, pl_bi, transform);
-    transform.translation() = Pi;
-    transform.rotate(Qi);
-    pcl::transformPointCloud(pl_bi, pl_wi, transform);
-    transform.translation() = Qj.inverse() * (-Pj);
-    transform.rotate(Qj.inverse());
-    pcl::transformPointCloud(pl_wi, pl_wj, transform);
-    transform.translation() = qic.inverse() * (-tic);
-    transform.rotate(qic.inverse());
-    pcl::transformPointCloud(pl_wj, pl_bj, transform);
-    Eigen::Map<Eigen::Vector3d> residual(residuals);
-    residual.setZero();
-    
-    double radius = 10; //单位mm
-    std::vector<int> pointIdxSearch;
-    std::vector<float> pointSquaredDistance;
-    TicToc tic_toc;
+    Eigen::Vector3d pts_imu_i = qic * p_i + tic;
+    Eigen::Vector3d pts_w = Qi * pts_imu_i + Pi;
+    Eigen::Vector3d pts_imu_j = Qj.inverse() * (pts_w - Pj);
+    Eigen::Vector3d pts_camera_j = qic.inverse() * (pts_imu_j - tic);
 
-    for(auto point : pl_bj){
-        if(kdtree.nearestKSearch(point, 1, pointIdxSearch, pointSquaredDistance) > 0 && pointSquaredDistance[0] < radius){
-            double d_x = (*p_in)[pointIdxSearch[0]].x - point.x;
-            double d_y = (*p_in)[pointIdxSearch[0]].y - point.y;
-            double d_z = (*p_in)[pointIdxSearch[0]].z - point.z;
-            residual +=  Eigen::Vector3d(d_x * d_x, d_y * d_y, d_z * d_z);
+    residuals[0] = std::abs( pd2 );
 
+
+    if (jacobians)
+    {
+        Eigen::Matrix3d Ri = Qi.toRotationMatrix();
+        Eigen::Matrix3d Rj = Qj.toRotationMatrix();
+        Eigen::Matrix3d ric = qic.toRotationMatrix();
+
+        if (jacobians[0])
+        {
+            Eigen::Map<Eigen::Matrix<double, 3, 7, Eigen::RowMajor>> jacobian_pose_i(jacobians[0]);
+
+            Eigen::Matrix<double, 3, 6> jaco_i;
+            jaco_i.leftCols<3>() = ric.transpose() * Rj.transpose();
+            jaco_i.rightCols<3>() = ric.transpose() * Rj.transpose() * Ri * -Utility::skewSymmetric(pts_imu_i);
+
+            jacobian_pose_i.leftCols<6>() = jaco_i;
+            jacobian_pose_i.rightCols<1>().setZero();
+        }
+
+        if (jacobians[1])
+        {
+            Eigen::Map<Eigen::Matrix<double, 3, 7, Eigen::RowMajor>> jacobian_pose_j(jacobians[1]);
+
+            Eigen::Matrix<double, 3, 6> jaco_j;
+            jaco_j.leftCols<3>() = ric.transpose() * -Rj.transpose();
+            jaco_j.rightCols<3>() = ric.transpose() * Utility::skewSymmetric(pts_imu_j);
+
+            jacobian_pose_j.leftCols<6>() = jaco_j;
+            jacobian_pose_j.rightCols<1>().setZero();
+        }
+        if (jacobians[2])
+        {
+            Eigen::Map<Eigen::Matrix<double, 3, 7, Eigen::RowMajor>> jacobian_ex_pose(jacobians[2]);
+            Eigen::Matrix<double, 3, 6> jaco_ex;
+            jaco_ex.leftCols<3>() = ric.transpose() * (Rj.transpose() * Ri - Eigen::Matrix3d::Identity());
+            Eigen::Matrix3d tmp_r = ric.transpose() * Rj.transpose() * Ri * ric;
+            jaco_ex.rightCols<3>() = -tmp_r * Utility::skewSymmetric(p_i) + Utility::skewSymmetric(tmp_r * p_i) +
+                                     Utility::skewSymmetric(ric.transpose() * (Rj.transpose() * (Ri * tic + Pi - Pj) - tic));
+            jacobian_ex_pose.leftCols<6>() = jaco_ex;
+            jacobian_ex_pose.rightCols<1>().setZero();
         }
     }
-    std::cout << "nearestKSearch cost：" << tic_toc.toc() << std::endl;
 
 
     return true;

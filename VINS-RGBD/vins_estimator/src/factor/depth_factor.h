@@ -9,13 +9,12 @@
 #include "../utility/tic_toc.h"
 #include "../parameters.h"
 
-class DepthFactor : public ceres::SizedCostFunction<3, 7, 7, 7>
+class DepthFactor : public ceres::SizedCostFunction<1, 7, 7, 7>
 {
   public:
-    DepthFactor(const pcl::PointCloud<pcl::PointXYZ> &p_i,const pcl::PointCloud<pcl::PointXYZ> &p_j);
+    DepthFactor(const Eigen::Vector3d &p_i, const float pd2);
     virtual bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const;
-
-    pcl::PointCloud<pcl::PointXYZ> pl_i,pl_j;
-    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr p_in;
+    
+    Eigen::Vector3d p_i;
+    float pd2;
 };

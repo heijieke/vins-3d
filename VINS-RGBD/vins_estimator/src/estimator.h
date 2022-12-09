@@ -19,6 +19,8 @@
 #include "factor/projection_td_factor.h"
 #include "factor/marginalization_factor.h"
 #include "factor/depth_factor.h"
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/kdtree/kdtree_flann.h>
 
 #include <unordered_map>
 #include <queue>
@@ -108,6 +110,7 @@ class Estimator
     InitialEXRotation initial_ex_rotation;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr pointlist[WINDOW_SIZE + 1];
+    pcl::PointCloud<pcl::PointXYZ>::Ptr featurePoint[WINDOW_SIZE + 1];
 
     bool first_imu;
     bool is_valid, is_key;

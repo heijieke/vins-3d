@@ -3,13 +3,16 @@
 # L515 Config
 
 #common parameters
-# imu_topic: "/camera/imu"
+#image_topic: "/camera/color/image_raw"
+
 image_topic: "/camera/color/image_raw"
 
 imu_topic: "/camera/imu/imu"
 
+point_topic: "/camera/depth/color/points"
+
 # depth_topic: "/camera/aligned_depth_to_color/image_raw"
-depth_topic: "/camera/depth/image_raw"
+depth_topic: "/camera/aligned_depth_to_color/image_raw"
 output_path: "/home/lyp/vins_rgbd_output/"
 
 #pointcloud settings
@@ -30,19 +33,19 @@ image_height: 480
   #TODO modify distortion
 
 distortion_parameters:
-   k1: 0.019686877727508545
-   k2: -0.08147568255662918
-   p1: 0.056254953145980835
-   p2: 0
+   k1: 1.25323e-01
+   k2: -2.51452e-01
+   p1: 7.12e-04
+   p2: 6.217e-03
 
 projection_parameters:
-   fx: 1.1452333984375e+03
-   cx: 9.430084228515625e+02
-   fy: 1.1452333984375e+03
-   cy: 5.331082153320312e+02
+   fx: 6.165911254882812e+02
+   fy: 6.166796264648438e+02
+   cx: 3.242193603515625e+02
+   cy: 2.3942701721191406e+02
 
 # Extrinsic parameter between IMU and Camera.
-estimate_extrinsic: 2   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
                         # 2  Don't know anything about extrinsic parameters. You don't need to give R,T. We will try to calibrate it. Do some rotation movement at beginning.
 #If you choose 0 or 1, you should write down the following matrix.
@@ -81,21 +84,16 @@ keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 
 #imu parameters       The more accurate parameters you provide, the better performance
 #for handheld, wheeld
-# acc_n: 0.1          # accelerometer measurement noise standard deviation. #0.2
-# gyr_n: 0.01         # gyroscope measurement noise standard deviation.     #0.05
-# acc_w: 0.0002         # accelerometer bias random work noise standard deviation.  #0.02
-# gyr_w: 2.0e-5       # gyroscope bias random work noise standard deviation.     #4.0e-5
-
-acc_n: 9.9800132038877442e-04          # accelerometer measurement noise standard deviation. #0.2
-gyr_n: 5.4446797316135227e-02         # gyroscope measurement noise standard deviation.     #0.05
-acc_w: 2.4176732748789915e-05         # accelerometer bias random work noise standard deviation.  #0.02
-gyr_w: 7.8156040424064068e-04       # gyroscope bias random work noise standard deviation.     #4.0e-5
+acc_n: 0.1          # accelerometer measurement noise standard deviation. #0.2
+gyr_n: 0.01         # gyroscope measurement noise standard deviation.     #0.05
+acc_w: 0.0002         # accelerometer bias random work noise standard deviation.  #0.02
+gyr_w: 2.0e-5       # gyroscope bias random work noise standard deviation.     #4.0e-5
 
 ## IMU noise (Use those from VINS-mono)
-IMU.NoiseGyro: 5.4446797316135227e-02 # 3 # 2.44e-4 #1e-3 # rad/s^0.5
-IMU.NoiseAcc: 9.9800132038877442e-04 #2 # 1.47e-3 #1e-2 # m/s^1.5
-IMU.GyroWalk: 7.8156040424064068e-04 # rad/s^1.5
-IMU.AccWalk: 2.4176732748789915e-05 # m/s^2.5
+IMU.NoiseGyro: 1.7794149940431553e-03 # 3 # 2.44e-4 #1e-3 # rad/s^0.5
+IMU.NoiseAcc: 1.2540381093709233e-02 #2 # 1.47e-3 #1e-2 # m/s^1.5
+IMU.GyroWalk: 3.9583466940523015e-05 # rad/s^1.5
+IMU.AccWalk: 5.0875897222204614e-04 # m/s^2.5
 IMU.Frequency: 500.0
 
 #for tracked applications
@@ -105,8 +103,7 @@ IMU.Frequency: 500.0
 #gyr_w: 2.0e-5       # gyroscope bias random work noise standard deviation.     #4.0e-5
 
 
-#g_norm: 9.7833       # gravity magnitude in guangzhou
-g_norm: 9.7910       # gravity magnitude in xiamen
+g_norm: 9.805       # gravity magnitude
 
 #loop closure parameters
 loop_closure: 1                    # start loop closure
@@ -126,3 +123,21 @@ rolling_shutter_tr: 0.033               # unit: s. rolling shutter read out time
 save_image: 1                   # save image in pose graph for visualization prupose; you can close this function by setting 0
 visualize_imu_forward: 0        # output imu forward propogation to achieve low latency and high frequence results
 visualize_camera_size: 0.4      # size of camera marker in RVIZ
+
+#阻断时间戳区间
+# cut_begin: 1552759720.0
+# cut_end: 1552759730.0
+# cut_begin: 1552759688.0
+# cut_end: 1552759700.0
+cut_begin: 0
+cut_end: 0
+
+#VoxelGrid滤波分辨率
+Voxel_res: 0.5
+
+g_LiDAR_sampling_point_step: 10
+group_size: 20
+
+#是否融合深度点云
+if_depth: 0
+depth_scale: 1000000000.0

@@ -22,6 +22,8 @@ std::string VINS_RESULT_PATH;
 std::string IMU_TOPIC;
 double ROW, COL;
 double TD, TR;
+double RESOLUTION;
+int IF_DEPTH;
 
 template <typename T>
 T readParam(ros::NodeHandle &n, std::string name)
@@ -71,6 +73,9 @@ void readParameters(ros::NodeHandle &n)
     ROW = fsSettings["image_height"];
     COL = fsSettings["image_width"];
     ROS_INFO("ROW: %f COL: %f ", ROW, COL);
+
+    RESOLUTION = fsSettings["Voxel_res"];
+    IF_DEPTH = fsSettings["if_depth"];
 
     ESTIMATE_EXTRINSIC = fsSettings["estimate_extrinsic"];
     if (ESTIMATE_EXTRINSIC == 2)

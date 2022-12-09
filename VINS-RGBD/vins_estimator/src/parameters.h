@@ -38,6 +38,9 @@ extern int ESTIMATE_TD;
 extern int ROLLING_SHUTTER;
 extern double ROW, COL;
 
+extern double RESOLUTION;
+extern int IF_DEPTH;
+
 
 void readParameters(ros::NodeHandle &n);
 

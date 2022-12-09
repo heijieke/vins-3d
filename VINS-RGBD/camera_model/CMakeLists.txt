@@ -13,8 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS filesystem program_options system)
 include_directories(${Boost_INCLUDE_DIRS})
 
-set(OpenCV_DIR /usr/local/opencv-3.3.0)
-find_package(OpenCV 3.3 REQUIRED)
+#set(OpenCV_DIR /usr/local/opencv-3.3.0)
+find_package(OpenCV REQUIRED)
 message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 # set(EIGEN_INCLUDE_DIR "/usr/local/include/eigen3")
 find_package(Ceres REQUIRED)

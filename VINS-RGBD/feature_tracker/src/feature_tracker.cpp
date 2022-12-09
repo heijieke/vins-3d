@@ -124,7 +124,7 @@ void FeatureTracker::readImage(const cv::Mat &_img, const cv::Mat &_depth, doubl
         {
             for (int i = 0; i < int(forw_pts.size()); i++)
                 status[i] = 0;
-            ROS_INFO("modify points. f%", _cur_time);
+            //ROS_INFO("modify points. f%", _cur_time);
         }
         reduceVector(prev_pts, status);
         reduceVector(cur_pts, status);
@@ -168,7 +168,7 @@ void FeatureTracker::readImage(const cv::Mat &_img, const cv::Mat &_depth, doubl
         if (_cur_time >= CUT_BEGIN && _cur_time <= CUT_END)
         {
             n_pts.clear();
-            ROS_INFO("modify points. f%", _cur_time);
+            //ROS_INFO("modify points. f%", _cur_time);
         }
 
         ROS_DEBUG("detect feature costs: %fms", t_t.toc());

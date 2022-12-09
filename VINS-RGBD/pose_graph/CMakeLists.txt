@@ -6,8 +6,8 @@ set(CMAKE_CXX_FLAGS "-std=c++14")
 #-DEIGEN_USE_MKL_ALL")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
-set(cv_bridge_DIR /usr/local/share/cv_bridge/cmake)
-set(OpenCV_DIR /usr/local/opencv-3.3.0)
+# set(cv_bridge_DIR /usr/local/share/cv_bridge/cmake)
+# set(OpenCV_DIR /usr/local/opencv-3.3.0)
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     std_msgs
@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
     message_filters
     )
 
-find_package(OpenCV 3.3 REQUIRED)
+find_package(OpenCV REQUIRED)
 message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 
 find_package(Ceres REQUIRED)

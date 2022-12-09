@@ -3,6 +3,7 @@
 std::string IMAGE_TOPIC;
 std::string DEPTH_TOPIC;
 std::string IMU_TOPIC;
+std::string POINT_TOPIC;
 std::vector<std::string> CAM_NAMES;
 std::string FISHEYE_MASK;
 int MAX_CNT;
@@ -20,6 +21,8 @@ int FISHEYE;
 bool PUB_THIS_FRAME;
 double CUT_BEGIN, CUT_END;
 double cx,cy,fx,fy;
+int g_LiDAR_sampling_point_step,group_size;
+double depth_scale;
 
 template <typename T>
 T readParam(ros::NodeHandle &n, std::string name)
@@ -53,6 +56,7 @@ void readParameters(ros::NodeHandle &n)
     fsSettings["image_topic"] >> IMAGE_TOPIC;
     fsSettings["depth_topic"] >> DEPTH_TOPIC;
     fsSettings["imu_topic"] >> IMU_TOPIC;
+    fsSettings["point_topic"] >> POINT_TOPIC;
     MAX_CNT = fsSettings["max_cnt"];
     MIN_DIST = fsSettings["min_dist"];
     ROW = fsSettings["image_height"];
@@ -68,6 +72,9 @@ void readParameters(ros::NodeHandle &n)
     cy = fsSettings["projection_parameters"]["cy"];
     fx = fsSettings["projection_parameters"]["fx"];
     fy = fsSettings["projection_parameters"]["fy"];
+    g_LiDAR_sampling_point_step = fsSettings["g_LiDAR_sampling_point_step"];
+    group_size = fsSettings["group_size"];
+    depth_scale = fsSettings["depth_scale"];
     if (FISHEYE == 1)
         FISHEYE_MASK = VINS_FOLDER_PATH + "config/fisheye_mask.jpg";
     CAM_NAMES.push_back(config_file);

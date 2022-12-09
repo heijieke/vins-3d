@@ -33,9 +33,7 @@ double last_image_time = 0;
 bool init_pub = 0;
 
 double blind = 0.1;
-int    group_size = 8;
 double disA = 0.01, disB = 0.1;
-int    g_LiDAR_sampling_point_step = 3;
 
 typedef pcl::PointXYZRGB PointType;
 
@@ -127,7 +125,7 @@ void give_feature( pcl::PointCloud< PointType > &pl, vector< orgtype > &types, p
     }
 }
 
-void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs::ImageConstPtr &depth_msg)
+void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs::ImageConstPtr &depth_msg, const sensor_msgs::PointCloud2ConstPtr &point_msg)
 {
     if(first_image_flag)
     {
@@ -254,8 +252,8 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
         //Use round to get depth value of corresponding points
         sensor_msgs::ChannelFloat32 depth_of_point;
 
-        sensor_msgs::PointCloud2Ptr color_points(new sensor_msgs::PointCloud2);
-        pcl::PointCloud< pcl::PointXYZRGB > pl;
+        pcl::PointCloud< pcl::PointXYZRGB> pl;
+        pcl::fromROSMsg(*point_msg, pl);
 
         feature_points->header = color_msg->header;
         feature_points->header.frame_id = "world";
@@ -297,23 +295,23 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
 
             // 生成彩色点云
             
-            auto &cur_img = trackerData[i].cur_img;
-            auto &cur_depth = trackerData[i].cur_depth;
-            pl.reserve(cur_img.rows * cur_img.cols);
-            for(int v = 0; v < cur_img.rows; v++)
-                for(int u = 0; u < cur_img.cols; u++){
-                    unsigned int d = cur_depth.ptr<unsigned int>(v)[u];
-                    if(d == 0) continue; //为0表示没有测量到
-                    pcl::PointXYZRGB point;
-                    point.z = double(d);
-                    point.x = (u - cx) * point.z / fx;
-                    point.y = (v - cy) * point.z / fy;
-                    point.b = cur_img.data[v * cur_img.step + u * cur_img.channels()];
-                    point.g = cur_img.data[v * cur_img.step + u * cur_img.channels() + 1];
-                    point.r = cur_img.data[v * cur_img.step + u * cur_img.channels() + 2];
-
-                    pl.push_back(point);
-                }
+        //     auto &cur_img = ptr->image;
+        //     auto &cur_depth = depth_ptr->image;
+        //     int cnt = 0;
+        //     pl.reserve(cur_img.rows * cur_img.cols);
+        //     for(int v = 0; v < cur_img.rows; v++)
+        //         for(int u = 0; u < cur_img.cols; u++){
+        //             unsigned int d = cur_depth.ptr<unsigned int>(v)[u];
+        //             if(d == 0) continue; //为0表示没有测量到
+        //             pcl::PointXYZRGB point;
+        //             point.z = d / depth_scale;
+        //             point.x = (u - cx) * point.z / fx;
+        //             point.y = (v - cy) * point.z / fy;
+        //             point.b = cur_img.data[v * cur_img.step + u * cur_img.channels()];
+        //             point.g = cur_img.data[v * cur_img.step + u * cur_img.channels() + 1];
+        //             point.r = cur_img.data[v * cur_img.step + u * cur_img.channels() + 2];
+        //             pl.push_back(point);
+        //         }
         }
         //debug use: print depth pixels
         //for (int iii = test.size() - 1; iii >= 0; iii--)
@@ -353,9 +351,10 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
           // plsize++;
           types[ plsize ].range = sqrt( pl[ plsize ].x * pl[ plsize ].x + pl[ plsize ].y * pl[ plsize ].y );
           give_feature( pl, types, pl_corn, pl_surf );
-          pcl::toROSMsg(pl_surf, *color_points);
-          color_points->header = depth_msg->header;
-          color_points->header.frame_id = "world";
+          sensor_msgs::PointCloud2 color_points;
+          pcl::toROSMsg(pl_surf, color_points);
+          color_points.header.stamp = depth_msg->header.stamp;
+          color_points.header.frame_id = "world";
           pub_points.publish(color_points);
           pub_img.publish(feature_points);//"feature"
           
@@ -430,11 +429,12 @@ int main(int argc, char **argv)
     //     https://blog.csdn.net/zyh821351004/article/details/47758433
     message_filters::Subscriber<sensor_msgs::Image> sub_image(n, IMAGE_TOPIC, 1);
     message_filters::Subscriber<sensor_msgs::Image> sub_depth(n, DEPTH_TOPIC, 1);
+    message_filters::Subscriber<sensor_msgs::PointCloud2> sub_point(n, POINT_TOPIC, 1);
 //    message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(sub_image, sub_depth, 100);
     // use ApproximateTime to fit fisheye camera
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image> syncPolicy;
-    message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth);
-    sync.registerCallback(boost::bind(&img_callback, _1, _2));
+    message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth, sub_point);
+    sync.registerCallback(boost::bind(&img_callback, _1, _2, _3));
 
     //有图像发布到IMAGE_TOPIC，执行img_callback     100: queue size
     //ros::Subscriber sub_img = n.subscribe(IMAGE_TOPIC, 100, img_callback);
