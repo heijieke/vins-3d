@@ -252,7 +252,7 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
         //Use round to get depth value of corresponding points
         sensor_msgs::ChannelFloat32 depth_of_point;
 
-        pcl::PointCloud< pcl::PointXYZRGB> pl;
+        pcl::PointCloud<PointType> pl;
         pcl::fromROSMsg(*point_msg, pl);
 
         feature_points->header = color_msg->header;
@@ -432,7 +432,7 @@ int main(int argc, char **argv)
     message_filters::Subscriber<sensor_msgs::PointCloud2> sub_point(n, POINT_TOPIC, 1);
 //    message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(sub_image, sub_depth, 100);
     // use ApproximateTime to fit fisheye camera
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image> syncPolicy;
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image,sensor_msgs::PointCloud2> syncPolicy;
     message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth, sub_point);
     sync.registerCallback(boost::bind(&img_callback, _1, _2, _3));
 
