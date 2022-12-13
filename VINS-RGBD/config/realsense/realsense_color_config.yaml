@@ -138,5 +138,6 @@ group_size: 20
 
 #是否融合深度点云
 if_depth: 0
-depth_scale: 1000000000.0
+#depth_scale: 1000000000.0
+depth_scale: 1000.0
 

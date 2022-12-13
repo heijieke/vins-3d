@@ -115,6 +115,7 @@ class OBCamera{
         sensor_msgs::PointCloud2 point_cloud_msg_;
         std::map<stream_index_pair, sensor_msgs::CameraInfo> camera_infos_;
         std::map<stream_index_pair, image_transport::Publisher> image_publishers_;
+        image_transport::Publisher imageG_publishers_;
         std::map<stream_index_pair, ros::Publisher> camera_info_publishers_;
 
         ros::Publisher imu_publisher_;

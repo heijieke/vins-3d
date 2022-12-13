@@ -165,6 +165,7 @@ void OBCamera::setupPublishers() {
     camera_info_publishers_[stream_index] = nh_.advertise<CameraInfo>(topic, 1);
   }
   extrinsics_publisher_ = nh_.advertise<orbbec_camera::Extrinsics>("extrinsic/depth_to_color", 1);
+  imageG_publishers_ = it.advertise("gray/image_raw", 1000000);
 }
 
 
@@ -177,9 +178,7 @@ void OBCamera::startPipeline() {
     // 选择第一个配置开流
     auto profile = profiles->getProfile(0);
     gyroSensor_->start(profile, [this](std::shared_ptr<ob::Frame> frame) {
-      // IMU降频，降到100hz，不然队列会溢出
-      auto time = frame->timeStamp();
-      auto timestamp = orbbec_camera::frameTimeStampToROSTime(time);
+      auto timestamp = orbbec_camera::frameTimeStampToROSTime(frame->systemTimeStamp());
       auto gyroFrame = frame->as<ob::GyroFrame>();
       // if(gyroFrame != nullptr && time/10 > last_time){
       //   auto gyro_value = gyroFrame->value();
@@ -238,6 +237,7 @@ void OBCamera::startPipeline() {
     pipeline_.reset();
   }
   pipeline_ = std::unique_ptr<ob::Pipeline>(new ob::Pipeline(device_));
+  pipeline_->enableFrameSync();
   pipeline_->start(config_, [this](std::shared_ptr<ob::FrameSet> frame_set) {
     frameSetCallback(std::move(frame_set));
   });
@@ -466,6 +466,16 @@ void OBCamera::publishColorFrame(std::shared_ptr<ob::ColorFrame> frame) {
   }
   sensor_msgs::ImagePtr img;
   img = cv_bridge::CvImage(std_msgs::Header(), encoding_.at(stream), image).toImageMsg();
+  cv::Mat image_gray;
+  cv::cvtColor(image, image_gray, cv::COLOR_BGR2GRAY);
+  sensor_msgs::ImagePtr img_gray = cv_bridge::CvImage(std_msgs::Header(), "mono8", image_gray).toImageMsg();
+
+  img_gray->width = width;
+  img_gray->height = height;
+  img_gray->is_bigendian = false;
+  img_gray->step = width * sizeof(uint8_t);
+  img_gray->header.frame_id = optical_frame_id_[COLOR];
+  img_gray->header.stamp = timestamp;
 
   img->width = width;
   img->height = height;
@@ -475,6 +485,7 @@ void OBCamera::publishColorFrame(std::shared_ptr<ob::ColorFrame> frame) {
   img->header.stamp = timestamp;
   auto& image_publisher = image_publishers_.at(stream);
   image_publisher.publish(img);
+  imageG_publishers_.publish(img_gray);
 }
 
 void OBCamera::publishDepthFrame(std::shared_ptr<ob::DepthFrame> frame) {
