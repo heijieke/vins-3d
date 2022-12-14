@@ -24,6 +24,7 @@ double ROW, COL;
 double TD, TR;
 double RESOLUTION;
 int IF_DEPTH;
+double WEIGHT;
 
 template <typename T>
 T readParam(ros::NodeHandle &n, std::string name)
@@ -76,6 +77,7 @@ void readParameters(ros::NodeHandle &n)
 
     RESOLUTION = fsSettings["Voxel_res"];
     IF_DEPTH = fsSettings["if_depth"];
+    WEIGHT = fsSettings["weight"];
 
     ESTIMATE_EXTRINSIC = fsSettings["estimate_extrinsic"];
     if (ESTIMATE_EXTRINSIC == 2)

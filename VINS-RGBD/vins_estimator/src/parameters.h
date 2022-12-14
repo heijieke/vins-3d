@@ -40,6 +40,7 @@ extern double ROW, COL;
 
 extern double RESOLUTION;
 extern int IF_DEPTH;
+extern double WEIGHT;
 
 
 void readParameters(ros::NodeHandle &n);

@@ -28,4 +28,6 @@ extern double CUT_BEGIN, CUT_END;
 extern double cx,cy,fx,fy;
 extern int g_LiDAR_sampling_point_step,group_size;
 extern double depth_scale;
+extern double RESOLUTION;
+extern int IF_DEPTH;
 void readParameters(ros::NodeHandle &n);

@@ -285,6 +285,7 @@ void pubCameraTransform(const Estimator &estimator, const std_msgs::Header &head
         geometry_msgs::TransformStamped tf_msg;
         tf_msg.header = header;
         tf_msg.header.frame_id = "world";
+        tf_msg.child_frame_id = "camera";
         tf_msg.transform.translation.x = P.x();
         tf_msg.transform.translation.y = P.y();
         tf_msg.transform.translation.z = P.z();

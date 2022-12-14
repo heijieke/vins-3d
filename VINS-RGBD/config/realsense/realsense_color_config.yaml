@@ -123,21 +123,23 @@ visualize_imu_forward: 0        # output imu forward propogation to achieve low 
 visualize_camera_size: 0.4      # size of camera marker in RVIZ
 
 #阻断时间戳区间
-# cut_begin: 1552759720.0
-# cut_end: 1552759730.0
+cut_begin: 1552759720.0
+cut_end: 1552759830.0
 # cut_begin: 1552759688.0
 # cut_end: 1552759700.0
-cut_begin: 0
-cut_end: 0
+# cut_begin: 0
+# cut_end: 0
 
 #VoxelGrid滤波分辨率
-Voxel_res: 0.5
+Voxel_res: 0.4
+Voxel_res1: 0.4
 
-g_LiDAR_sampling_point_step: 10
-group_size: 20
+g_LiDAR_sampling_point_step: 3
+group_size: 8
 
 #是否融合深度点云
 if_depth: 0
 #depth_scale: 1000000000.0
 depth_scale: 1000.0
 
+weight: 1.0

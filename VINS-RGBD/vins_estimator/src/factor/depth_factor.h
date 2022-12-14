@@ -12,9 +12,9 @@
 class DepthFactor : public ceres::SizedCostFunction<1, 7, 7, 7>
 {
   public:
-    DepthFactor(const Eigen::Vector3d &p_i, const float pd2);
+    DepthFactor(const Eigen::Vector3d &p_i, const Eigen::Vector3d &p_j, const double &weight);
     virtual bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const;
     
-    Eigen::Vector3d p_i;
-    float pd2;
+    Eigen::Vector3d p_i,p_j;
+    double weight;
 };

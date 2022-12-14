@@ -23,6 +23,7 @@ double CUT_BEGIN, CUT_END;
 double cx,cy,fx,fy;
 int g_LiDAR_sampling_point_step,group_size;
 double depth_scale;
+double RESOLUTION;
 
 template <typename T>
 T readParam(ros::NodeHandle &n, std::string name)
@@ -75,6 +76,7 @@ void readParameters(ros::NodeHandle &n)
     g_LiDAR_sampling_point_step = fsSettings["g_LiDAR_sampling_point_step"];
     group_size = fsSettings["group_size"];
     depth_scale = fsSettings["depth_scale"];
+    RESOLUTION = fsSettings["Voxel_res1"];
     if (FISHEYE == 1)
         FISHEYE_MASK = VINS_FOLDER_PATH + "config/fisheye_mask.jpg";
     CAM_NAMES.push_back(config_file);

@@ -1,6 +1,6 @@
 #include "depth_factor.h"
 
-DepthFactor::DepthFactor(const Eigen::Vector3d &p_i, const float pd2) : p_i(p_i), pd2(pd2)
+DepthFactor::DepthFactor(const Eigen::Vector3d &p_i, const Eigen::Vector3d &p_j,const double &weight) : p_i(p_i), p_j(p_j), weight(weight)
 {
 };
 
@@ -21,7 +21,9 @@ bool DepthFactor::Evaluate(double const *const *parameters, double *residuals, d
     Eigen::Vector3d pts_imu_j = Qj.inverse() * (pts_w - Pj);
     Eigen::Vector3d pts_camera_j = qic.inverse() * (pts_imu_j - tic);
 
-    residuals[0] = std::abs( pd2 );
+    Eigen::Vector3d res = p_j - pts_camera_j;
+
+    residuals[0] = weight * sqrt(fabs(res[0]*res[0] + res[1]*res[1] + res[2]*res[2]));
 
 
     if (jacobians)
