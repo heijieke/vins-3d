@@ -2,9 +2,6 @@
 
 #include <ros/assert.h>
 #include <ceres/ceres.h>
-#include <pcl/point_cloud.h>
-#include <pcl/common/transforms.h>
-#include <pcl/kdtree/kdtree_flann.h>
 #include "../utility/utility.h"
 #include "../utility/tic_toc.h"
 #include "../parameters.h"

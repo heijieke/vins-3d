@@ -172,12 +172,14 @@ void OBCamera::setupPublishers() {
 void OBCamera::startPipeline() {
   accelSensor_ = device_->getSensorList()->getSensor(OB_SENSOR_ACCEL);
   gyroSensor_ = device_->getSensorList()->getSensor(OB_SENSOR_GYRO);
+  double pi_360 = 2*3.1415926/360; //角度转换为弧度
+  double g=9.80665;//重力加速度
   if(gyroSensor_) {
     // 获取配置列表
     auto profiles = gyroSensor_->getStreamProfileList();
     // 选择第一个配置开流
     auto profile = profiles->getProfile(0);
-    gyroSensor_->start(profile, [this](std::shared_ptr<ob::Frame> frame) {
+    gyroSensor_->start(profile, [this,&pi_360](std::shared_ptr<ob::Frame> frame) {
       auto timestamp = orbbec_camera::frameTimeStampToROSTime(frame->systemTimeStamp());
       auto gyroFrame = frame->as<ob::GyroFrame>();
       // if(gyroFrame != nullptr && time/10 > last_time){
@@ -192,9 +194,9 @@ void OBCamera::startPipeline() {
         auto gyro_value = gyroFrame->value();
         imu_msg_.header.stamp = timestamp;
         imu_msg_.header.frame_id = "imuFrame";
-        imu_msg_.angular_velocity.x = gyro_value.x;
-        imu_msg_.angular_velocity.y = gyro_value.y;
-        imu_msg_.angular_velocity.z = gyro_value.z;
+        imu_msg_.angular_velocity.x = pi_360*gyro_value.x;
+        imu_msg_.angular_velocity.y = pi_360*gyro_value.y;
+        imu_msg_.angular_velocity.z = pi_360*gyro_value.z;
       }
     });
   }else {
@@ -206,7 +208,7 @@ void OBCamera::startPipeline() {
     auto profiles = accelSensor_->getStreamProfileList();
     // 选择第一个配置开流
     auto profile = profiles->getProfile(0);
-    accelSensor_->start(profile, [this](std::shared_ptr<ob::Frame> frame) {
+    accelSensor_->start(profile, [this, &g](std::shared_ptr<ob::Frame> frame) {
       auto accelFrame = frame->as<ob::AccelFrame>();
       // auto time = frame->timeStamp();
       // if(accelFrame != nullptr && time/10 > last_time){
@@ -222,9 +224,9 @@ void OBCamera::startPipeline() {
 
       if(accelFrame != nullptr){
         auto accel_value = accelFrame->value();
-        imu_msg_.linear_acceleration.x = accel_value.x;
-        imu_msg_.linear_acceleration.y = accel_value.y;
-        imu_msg_.linear_acceleration.z = accel_value.z;
+        imu_msg_.linear_acceleration.x = accel_value.x*g;
+        imu_msg_.linear_acceleration.y = accel_value.y*g;
+        imu_msg_.linear_acceleration.z = accel_value.z*g;
         imu_publisher_.publish(imu_msg_);
       }
     });
@@ -706,7 +708,7 @@ void OBCamera::publishDepthPointCloud(std::shared_ptr<ob::FrameSet> frame_set) {
 
   auto timestamp = orbbec_camera::frameTimeStampToROSTime(depth_frame->systemTimeStamp());
   point_cloud_msg_.header.stamp = timestamp;
-  point_cloud_msg_.header.frame_id = "color_point_cloud";//optical_frame_id_[COLOR];
+  point_cloud_msg_.header.frame_id = "camera";//optical_frame_id_[COLOR];
   point_cloud_msg_.is_dense = true;
   point_cloud_msg_.width = valid_count;
   point_cloud_msg_.height = 1;
@@ -768,7 +770,7 @@ void OBCamera::publishColorPointCloud(std::shared_ptr<ob::FrameSet> frame_set) {
 
   auto timestamp = orbbec_camera::frameTimeStampToROSTime(depth_frame->systemTimeStamp());
   point_cloud_msg_.header.stamp = timestamp;
-  point_cloud_msg_.header.frame_id = "color_point_cloud";//optical_frame_id_[COLOR];
+  point_cloud_msg_.header.frame_id = "camera";//optical_frame_id_[COLOR];
   point_cloud_msg_.is_dense = true;
   point_cloud_msg_.width = valid_count;
   point_cloud_msg_.height = 1;
