@@ -22,8 +22,8 @@ sensor_msgs::CameraInfo convertToCameraInfo(OBCameraIntrinsic intrinsic,
   info.D[0] = distortion.k1;
   info.D[1] = distortion.k2;
   info.D[2] = distortion.k3;
-  info.D[3] = distortion.k4;
-  info.D[4] = distortion.k5;
+  info.D[3] = distortion.p1;
+  info.D[4] = distortion.p2;
 
   info.K.fill(0.0);
   info.K[0] = intrinsic.fx;

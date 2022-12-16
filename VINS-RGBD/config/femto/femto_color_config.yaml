@@ -7,7 +7,7 @@
 
 image_topic: "/camera/color/image_raw"
 
-imu_topic: "/camera/imu"
+imu_topic: "/camera/imu/imu"
 
 point_topic: "/camera/depth/color/points"
 
@@ -33,19 +33,19 @@ image_height: 480
   #TODO modify distortion
 
 distortion_parameters:
-   k1: 1.25323e-01
-   k2: -2.51452e-01
-   p1: 7.12e-04
-   p2: 6.217e-03
+   k1: 0.020034726709127426
+   k2: -0.08602049946784973
+   p1: -0.00019022979540750384
+   p2: 0.00013130763545632362
 
 projection_parameters:
-   fx: 6.165911254882812e+02
-   fy: 6.166796264648438e+02
-   cx: 3.242193603515625e+02
-   cy: 2.3942701721191406e+02
+   fx: 520.2527465820312
+   fy: 520.2527465820312
+   cx: 309.72003173828125
+   cy: 237.07284545898438
 
 # Extrinsic parameter between IMU and Camera.
-estimate_extrinsic: 2   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+estimate_extrinsic: 1   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
                         # 2  Don't know anything about extrinsic parameters. You don't need to give R,T. We will try to calibrate it. Do some rotation movement at beginning.
 #If you choose 0 or 1, you should write down the following matrix.
@@ -54,9 +54,9 @@ extrinsicRotation: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [  0.0008748, -0.0047406,  0.9999884,
-           -0.9999681, -0.0079460,  0.0008371,
-            0.0079419, -0.9999572, -0.0047474 ]
+   data: [ 0.9555984208732571, 0.28993069607529004, 0.052648357028815346,
+           -0.28759895251539375, 0.8787423668130893, 0.3809182264998312,
+           0.06417554469253936, -0.3791464680582244, 0.9231085825743297]
 
 #   0.999943        -0.00932683       0.0052792
 #   0.00945274       0.999659        -0.0243487
@@ -66,7 +66,7 @@ extrinsicTranslation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [1.30441e-05, 0.0149225, 0.000316835]
+   data: [-0.0066252337888122025, -0.03818179366280626, -0.082778405422083]
 # -0.0120648602023721  0.00217691715806723  0.0023775571025908
 #feature traker paprameters
 max_cnt: 200           # max feature number in feature tracking
@@ -84,10 +84,10 @@ keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 
 #imu parameters       The more accurate parameters you provide, the better performance
 #for handheld, wheeld
-acc_n: 9.9800132038877442e-04          # accelerometer measurement noise standard deviation. #0.2
-gyr_n: 5.4446797316135227e-02         # gyroscope measurement noise standard deviation.     #0.05
-acc_w: 2.4176732748789915e-05         # accelerometer bias random work noise standard deviation.  #0.02
-gyr_w: 7.8156040424064068e-04       # gyroscope bias random work noise standard deviation.     #4.0e-5
+acc_n: 0.0010425923837839013          # accelerometer measurement noise standard deviation. #0.2
+gyr_n: 0.060091690697306056         # gyroscope measurement noise standard deviation.     #0.05
+acc_w: 1.2097443290232942e-05         # accelerometer bias random work noise standard deviation.  #0.02
+gyr_w: 0.0007794251892344005       # gyroscope bias random work noise standard deviation.     #4.0e-5
 
 ## IMU noise (Use those from VINS-mono)
 # IMU.NoiseGyro: 1.7794149940431553e-03 # 3 # 2.44e-4 #1e-3 # rad/s^0.5
@@ -103,7 +103,7 @@ gyr_w: 7.8156040424064068e-04       # gyroscope bias random work noise standard 
 #gyr_w: 2.0e-5       # gyroscope bias random work noise standard deviation.     #4.0e-5
 
 
-g_norm: 9.800       # gravity magnitude
+g_norm: 9.7914       # gravity magnitude
 
 #loop closure parameters
 loop_closure: 1                    # start loop closure
@@ -113,7 +113,7 @@ pose_graph_save_path: "/home/lyp/vins_rgbd_output/pose_graph/" # save and load p
 
 #unsynchronization parameters
 estimate_td: 1                      # online estimate time offset between camera and imu
-td: -1.000                           # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+td: 0.000                           # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
 
 #rolling shutter parameters
 rolling_shutter: 1                      # 0: global shutter camera, 1: rolling shutter camera
@@ -134,10 +134,11 @@ cut_end: 0
 
 #VoxelGrid滤波分辨率
 Voxel_res: 0.5
+Voxel_res1: 0.4
 
-g_LiDAR_sampling_point_step: 10
-group_size: 20
+g_LiDAR_sampling_point_step: 3
+group_size: 8
 
 #是否融合深度点云
 if_depth: 0
-depth_scale: 1000000000.0
+depth_scale: 1000.0

@@ -594,28 +594,34 @@ void imgP_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msg
         }
         else
         {
-          pcl::PointCloud< PointType > pl_corn, pl_surf;
-          vector< orgtype >            types;
-          uint                         plsize = pl.size() - 1;
-          pl_corn.reserve( plsize );
-          pl_surf.reserve( plsize );
-          types.resize( plsize + 1 );
-          double vx,vy,vz;
-          for ( uint i = 0; i < plsize; i++ )
-          {
-            types[ i ].range = pl[ i ].x;
-            vx = pl[ i ].x - pl[ i + 1 ].x;
-            vy = pl[ i ].y - pl[ i + 1 ].y;
-            vz = pl[ i ].z - pl[ i + 1 ].z;
-            types[ i ].dista = vx * vx + vy * vy + vz * vz;
-          }
-          // plsize++;
-          types[ plsize ].range = sqrt( pl[ plsize ].x * pl[ plsize ].x + pl[ plsize ].y * pl[ plsize ].y );
-          give_feature( pl, types, pl_corn, pl_surf );
+        //   pcl::PointCloud< PointType > pl_corn, pl_surf;
+        //   vector< orgtype >            types;
+        //   uint                         plsize = pl.size() - 1;
+        //   pl_corn.reserve( plsize );
+        //   pl_surf.reserve( plsize );
+        //   types.resize( plsize + 1 );
+        //   double vx,vy,vz;
+        //   for ( uint i = 0; i < plsize; i++ )
+        //   {
+        //     types[ i ].range = pl[ i ].x;
+        //     vx = pl[ i ].x - pl[ i + 1 ].x;
+        //     vy = pl[ i ].y - pl[ i + 1 ].y;
+        //     vz = pl[ i ].z - pl[ i + 1 ].z;
+        //     types[ i ].dista = vx * vx + vy * vy + vz * vz;
+        //   }
+        //   // plsize++;
+        //   types[ plsize ].range = sqrt( pl[ plsize ].x * pl[ plsize ].x + pl[ plsize ].y * pl[ plsize ].y );
+        //   give_feature( pl, types, pl_corn, pl_surf );
+          pcl::PointCloud<PointType>::Ptr inputCloud = boost::make_shared<pcl::PointCloud<PointType>>(pl);
+          pcl::PointCloud<PointType>::Ptr filteredCloud = boost::make_shared<pcl::PointCloud<PointType>>();
+          pcl::VoxelGrid<PointType> filter;
+          filter.setInputCloud(inputCloud);
+          filter.setLeafSize(RESOLUTION, RESOLUTION, RESOLUTION);
+          filter.filter(*filteredCloud);
           sensor_msgs::PointCloud2 color_points;
-          pcl::toROSMsg(pl_surf, color_points);
+          pcl::toROSMsg(*filteredCloud, color_points);
           color_points.header.stamp = depth_msg->header.stamp;
-          color_points.header.frame_id = "world";
+          color_points.header.frame_id = "camera";
           pub_points.publish(color_points);
           pub_img.publish(feature_points);//"feature"
           
@@ -690,17 +696,17 @@ int main(int argc, char **argv)
     //     https://blog.csdn.net/zyh821351004/article/details/47758433
     message_filters::Subscriber<sensor_msgs::Image> sub_image(n, IMAGE_TOPIC, 1);
     message_filters::Subscriber<sensor_msgs::Image> sub_depth(n, DEPTH_TOPIC, 1);
-        //message_filters::Subscriber<sensor_msgs::PointCloud2> sub_point(n, POINT_TOPIC, 1);
-        //message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(sub_image, sub_depth, 100);
-        // use ApproximateTime to fit fisheye camera
-        // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image,sensor_msgs::PointCloud2> syncPolicy;
-        // message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth, sub_point);
-        // sync.registerCallback(boost::bind(&imgP_callback, _1, _2, _3));
+    message_filters::Subscriber<sensor_msgs::PointCloud2> sub_point(n, POINT_TOPIC, 1);
+    //message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(sub_image, sub_depth, 100);
+    //use ApproximateTime to fit fisheye camera
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image,sensor_msgs::PointCloud2> syncPolicy;
+    message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth, sub_point);
+    sync.registerCallback(boost::bind(&imgP_callback, _1, _2, _3));
 
 
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image> syncPolicy;
-    message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth);
-    sync.registerCallback(boost::bind(&img_callback, _1, _2));
+    // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image> syncPolicy;
+    // message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth);
+    // sync.registerCallback(boost::bind(&img_callback, _1, _2));
 
 
     //有图像发布到IMAGE_TOPIC，执行img_callback     100: queue size

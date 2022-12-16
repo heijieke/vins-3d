@@ -155,7 +155,7 @@ getMeasurements()
 
         if (!(imu_buf.back()->header.stamp.toSec() > feature_buf.front()->header.stamp.toSec() + estimator.td))
         {
-            //ROS_WARN("wait for imu, only should happen at the beginning");
+            ROS_WARN("wait for imu, only should happen at the beginning");
             sum_of_wait++;
             return measurements;
         }
@@ -190,7 +190,7 @@ void imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
 {
     if (imu_msg->header.stamp.toSec() <= last_imu_t)
     {
-        ROS_WARN("imu message in disorder! %f",imu_msg->header.stamp.toSec() );
+        //ROS_WARN("imu message in disorder! %f",imu_msg->header.stamp.toSec() );
         return;
     }
 
@@ -277,7 +277,7 @@ void process()
         std::unique_lock<std::mutex> lk(m_buf);
         con.wait(lk, [&]
                  {
-            return (measurements = getMeasurements()).size() != 0;
+            return (measurements = getMeasurements()).size() > 0;
                  });
         lk.unlock();
         m_estimator.lock();
