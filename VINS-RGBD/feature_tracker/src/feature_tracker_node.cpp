@@ -25,6 +25,7 @@ queue<sensor_msgs::ImageConstPtr> img_buf;
 ros::Publisher pub_img,pub_match;
 ros::Publisher pub_restart;
 ros::Publisher pub_points;
+ros::Publisher pub_points_full;
 
 FeatureTracker trackerData[NUM_OF_CAM];
 double first_image_time;
@@ -302,11 +303,10 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
                 for(int u = 0; u < cur_depth.cols; u++){
                     unsigned short d = cur_depth.ptr<unsigned short>(v)[u];
                     if(d == 0) continue; //为0表示没有测量到
-                    //y和z互换
                     pcl::PointXYZRGB point;
-                    point.x = static_cast<double>(d) / depth_scale;
-                    point.z = -(u - cx) * point.x / fx;
-                    point.y = (v - cy) * point.x / fy;
+                    point.z = static_cast<double>(d) / depth_scale;
+                    point.x = (u - cx) * point.z / fx;
+                    point.y = (v - cy) * point.z / fy;
                     point.b = cur_img.ptr<uchar>(v)[u*3];
                     point.g = cur_img.ptr<uchar>(v)[u*3 + 1];
                     point.r = cur_img.ptr<uchar>(v)[u*3 + 2];
@@ -333,24 +333,24 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
         }
         else
         {
-        //   pcl::PointCloud< PointType > pl_corn, pl_surf;
-        //   vector< orgtype >            types;
-        //   uint                         plsize = pl.size() - 1;
-        //   pl_corn.reserve( plsize );
-        //   pl_surf.reserve( plsize );
-        //   types.resize( plsize + 1 );
-        //   double vx,vy,vz;
-        //   for ( uint i = 0; i < plsize; i++ )
-        //   {
-        //     types[ i ].range = pl[ i ].x;
-        //     vx = pl[ i ].x - pl[ i + 1 ].x;
-        //     vy = pl[ i ].y - pl[ i + 1 ].y;
-        //     vz = pl[ i ].z - pl[ i + 1 ].z;
-        //     types[ i ].dista = vx * vx + vy * vy + vz * vz;
-        //   }
-        //   // plsize++;
-        //   types[ plsize ].range = sqrt( pl[ plsize ].x * pl[ plsize ].x + pl[ plsize ].y * pl[ plsize ].y );
-        //   give_feature( pl, types, pl_corn, pl_surf );
+          pcl::PointCloud< PointType > pl_corn, pl_surf;
+          vector< orgtype >            types;
+          uint                         plsize = pl.size() - 1;
+          pl_corn.reserve( plsize );
+          pl_surf.reserve( plsize );
+          types.resize( plsize + 1 );
+          double vx,vy,vz;
+          for ( uint i = 0; i < plsize; i++ )
+          {
+            types[ i ].range = pl[ i ].x;
+            vx = pl[ i ].x - pl[ i + 1 ].x;
+            vy = pl[ i ].y - pl[ i + 1 ].y;
+            vz = pl[ i ].z - pl[ i + 1 ].z;
+            types[ i ].dista = vx * vx + vy * vy + vz * vz;
+          }
+          // plsize++;
+          types[ plsize ].range = sqrt( pl[ plsize ].x * pl[ plsize ].x + pl[ plsize ].y * pl[ plsize ].y );
+          give_feature( pl, types, pl_corn, pl_surf );
           pcl::PointCloud<PointType>::Ptr inputCloud = boost::make_shared<pcl::PointCloud<PointType>>(pl);
           pcl::PointCloud<PointType>::Ptr filteredCloud = boost::make_shared<pcl::PointCloud<PointType>>();
           pcl::VoxelGrid<PointType> filter;
@@ -358,11 +358,17 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
           filter.setLeafSize(RESOLUTION, RESOLUTION, RESOLUTION);
           filter.filter(*filteredCloud);
           sensor_msgs::PointCloud2 color_points;
+          sensor_msgs::PointCloud2 color_points_full;
           pcl::toROSMsg(*filteredCloud, color_points);
+          pcl::toROSMsg(pl, color_points_full);
           color_points.is_dense = false;
           color_points.header.stamp = depth_msg->header.stamp;
           color_points.header.frame_id = "camera";
+          color_points_full.is_dense = false;
+          color_points_full.header.stamp = depth_msg->header.stamp;
+          color_points_full.header.frame_id = "camera";
           pub_points.publish(color_points);
+          pub_points_full.publish(color_points_full);
           pub_img.publish(feature_points);//"feature"
           
         }
@@ -696,17 +702,18 @@ int main(int argc, char **argv)
     //     https://blog.csdn.net/zyh821351004/article/details/47758433
     message_filters::Subscriber<sensor_msgs::Image> sub_image(n, IMAGE_TOPIC, 1);
     message_filters::Subscriber<sensor_msgs::Image> sub_depth(n, DEPTH_TOPIC, 1);
-    message_filters::Subscriber<sensor_msgs::PointCloud2> sub_point(n, POINT_TOPIC, 1);
+
+    //message_filters::Subscriber<sensor_msgs::PointCloud2> sub_point(n, POINT_TOPIC, 1);
     //message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image> sync(sub_image, sub_depth, 100);
     //use ApproximateTime to fit fisheye camera
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image,sensor_msgs::PointCloud2> syncPolicy;
-    message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth, sub_point);
-    sync.registerCallback(boost::bind(&imgP_callback, _1, _2, _3));
+    // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image,sensor_msgs::PointCloud2> syncPolicy;
+    // message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth, sub_point);
+    // sync.registerCallback(boost::bind(&imgP_callback, _1, _2, _3));
 
 
-    // typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image> syncPolicy;
-    // message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth);
-    // sync.registerCallback(boost::bind(&img_callback, _1, _2));
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image,sensor_msgs::Image> syncPolicy;
+    message_filters::Synchronizer<syncPolicy> sync(syncPolicy(10), sub_image, sub_depth);
+    sync.registerCallback(boost::bind(&img_callback, _1, _2));
 
 
     //有图像发布到IMAGE_TOPIC，执行img_callback     100: queue size
@@ -716,6 +723,7 @@ int main(int argc, char **argv)
     pub_match = n.advertise<sensor_msgs::Image>("feature_img",1000);
     pub_restart = n.advertise<std_msgs::Bool>("restart",1000);
     pub_points = n.advertise<sensor_msgs::PointCloud2>("points",1000);
+    pub_points_full = n.advertise<sensor_msgs::PointCloud2>("points_full",1000);
     /*
     if (SHOW_TRACK)
         cv::namedWindow("vis", cv::WINDOW_NORMAL);

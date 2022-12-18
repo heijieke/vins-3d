@@ -767,9 +767,10 @@ bool Estimator::failureDetection()
 void Estimator::optimization()
 {
     ceres::Problem problem;
-    ceres::LossFunction *loss_function;
+    ceres::LossFunction *loss_function,*loss_function2;
     //loss_function = new ceres::HuberLoss(1.0);
     loss_function = new ceres::CauchyLoss(1.0);
+    loss_function2 = new ceres::CauchyLoss(THRESHOLD);
     for (int i = 0; i < WINDOW_SIZE + 1; i++)
     {
         ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
@@ -885,99 +886,102 @@ void Estimator::optimization()
         ROS_DEBUG("visual measurement count: %d", f_m_cnt);
         ROS_DEBUG("prepare for ceres: %f", t_prepare.toc());
     }else{
-        for (int i = 0; i < WINDOW_SIZE; i++)
-        {
-            pcl::KdTreeFLANN<pcl::PointXYZ>::Ptr kdtree = boost::make_shared<pcl::KdTreeFLANN<pcl::PointXYZ>>();
-            double maximum_pt_range = 0.0;
-            int NUM_MATCH_POINTS = 1;
-            std::vector<int> pointIdxKNNSearch(NUM_MATCH_POINTS);
-            std::vector<float> pointKNNSquaredDistance(NUM_MATCH_POINTS);
-            pcl::PointCloud<pcl::PointXYZ>::Ptr points_j = pointlist[i + 1];
-            kdtree->setInputCloud (points_j);
-            Eigen::Vector3d Pi(para_Pose[i][0], para_Pose[i][1], para_Pose[i][2]);
-            Eigen::Quaterniond Qi(para_Pose[i][6], para_Pose[i][3], para_Pose[i][4], para_Pose[i][5]);
+        if(IF_DEPTH){
+            for (int i = 0; i < WINDOW_SIZE; i++)
+            {
+                pcl::KdTreeFLANN<pcl::PointXYZ>::Ptr kdtree = boost::make_shared<pcl::KdTreeFLANN<pcl::PointXYZ>>();
+                double maximum_pt_range = 0.0;
+                int NUM_MATCH_POINTS = 1;
+                std::vector<int> pointIdxKNNSearch(NUM_MATCH_POINTS);
+                std::vector<float> pointKNNSquaredDistance(NUM_MATCH_POINTS);
+                pcl::PointCloud<pcl::PointXYZ>::Ptr points_j = pointlist[i + 1];
+                kdtree->setInputCloud (points_j);
+                Eigen::Vector3d Pi(para_Pose[i][0], para_Pose[i][1], para_Pose[i][2]);
+                Eigen::Quaterniond Qi(para_Pose[i][6], para_Pose[i][3], para_Pose[i][4], para_Pose[i][5]);
 
-            Eigen::Vector3d Pj(para_Pose[i + 1][0], para_Pose[i + 1][1], para_Pose[i + 1][2]);
-            Eigen::Quaterniond Qj(para_Pose[i + 1][6], para_Pose[i + 1][3], para_Pose[i + 1][4], para_Pose[i + 1][5]);
+                Eigen::Vector3d Pj(para_Pose[i + 1][0], para_Pose[i + 1][1], para_Pose[i + 1][2]);
+                Eigen::Quaterniond Qj(para_Pose[i + 1][6], para_Pose[i + 1][3], para_Pose[i + 1][4], para_Pose[i + 1][5]);
 
-            Eigen::Vector3d tic(para_Ex_Pose[0][0], para_Ex_Pose[0][1], para_Ex_Pose[0][2]);
-            Eigen::Quaterniond qic(para_Ex_Pose[0][6], para_Ex_Pose[0][3], para_Ex_Pose[0][4], para_Ex_Pose[0][5]);
+                Eigen::Vector3d tic(para_Ex_Pose[0][0], para_Ex_Pose[0][1], para_Ex_Pose[0][2]);
+                Eigen::Quaterniond qic(para_Ex_Pose[0][6], para_Ex_Pose[0][3], para_Ex_Pose[0][4], para_Ex_Pose[0][5]);
 
-            int m_lio_update_point_step = 1;
-            for(int iter = 0; iter < pointlist[i]->points.size(); iter += m_lio_update_point_step){
+                int m_lio_update_point_step = 1;
+                for(int iter = 0; iter < pointlist[i]->points.size(); iter += m_lio_update_point_step){
 
-                pcl::PointXYZ point = pointlist[i]->points[iter];
-                Eigen::Vector3d p_i(point.x, point.y, point.z);
-                Eigen::Vector3d pts_w = Qi * p_i + Pi;
-                Eigen::Vector3d pts_imu_j = Qj.inverse() * (pts_w - Pj);
-                Eigen::Vector3d pts_camera_j = qic.inverse() * (pts_imu_j - tic);
-                pcl::PointXYZ p_j(pts_camera_j[0], pts_camera_j[1], pts_camera_j[2]);
-                if ( kdtree->nearestKSearch(p_j, NUM_MATCH_POINTS, pointIdxKNNSearch, pointKNNSquaredDistance) > 0)
-                {
-                    Eigen::Vector3d pj((*points_j)[pointIdxKNNSearch[0]].x, (*points_j)[pointIdxKNNSearch[0]].y, (*points_j)[pointIdxKNNSearch[0]].z);
-                    double weight = 1.0;
-                    if(f_manager.feature.size() <= 50)
-                        weight = WEIGHT;
-                    DepthFactor *d = new DepthFactor(p_i, pj, weight);
-                    problem.AddResidualBlock(d, loss_function, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
+                    pcl::PointXYZ point = pointlist[i]->points[iter];
+                    Eigen::Vector3d p_i(point.x, point.y, point.z);
+                    Eigen::Vector3d pts_w = Qi * p_i + Pi;
+                    Eigen::Vector3d pts_imu_j = Qj.inverse() * (pts_w - Pj);
+                    Eigen::Vector3d pts_camera_j = qic.inverse() * (pts_imu_j - tic);
+                    pcl::PointXYZ p_j(pts_camera_j[0], pts_camera_j[1], pts_camera_j[2]);
+                    int result = kdtree->nearestKSearch(p_j, NUM_MATCH_POINTS, pointIdxKNNSearch, pointKNNSquaredDistance);
+                    if (result  > 0 && pointKNNSquaredDistance[0] < DISTANCE)
+                    {
+                        Eigen::Vector3d pj((*points_j)[pointIdxKNNSearch[0]].x, (*points_j)[pointIdxKNNSearch[0]].y, (*points_j)[pointIdxKNNSearch[0]].z);
+                        double weight = 1.0;
+                        // if(f_manager.feature.size() <= 50)
+                        //     weight = WEIGHT;
+                        DepthFactor *d = new DepthFactor(p_i, pj, weight);
+                        problem.AddResidualBlock(d, NULL, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
 
-                    // std::vector<Eigen::Vector3d> pj(NUM_MATCH_POINTS);
-                    // for ( int j = 0; j < NUM_MATCH_POINTS; j++ ){
-                    //     pj[j][0] = (*points_j)[pointIdxKNNSearch[j]].x;
-                    //     pj[j][1] = (*points_j)[pointIdxKNNSearch[j]].y;
-                    //     pj[j][2] = (*points_j)[pointIdxKNNSearch[j]].z;
-                    // }
-                    // double ori_pt_dis = sqrt( point.x * point.x + point.y * point.y + point.z * point.z);
-                    // maximum_pt_range = std::max( ori_pt_dis, maximum_pt_range );
-                    // cv::Mat matA0( NUM_MATCH_POINTS, 3, CV_32F, cv::Scalar::all( 0 ) );
-                    // cv::Mat matB0( NUM_MATCH_POINTS, 1, CV_32F, cv::Scalar::all( -1 ) );
-                    // cv::Mat matX0( NUM_MATCH_POINTS, 1, CV_32F, cv::Scalar::all( 0 ) );
-                    // for (std::size_t j = 0; j < pointIdxKNNSearch.size (); ++j){
-                    //     matA0.at<float>(j, 0) = (*points_j)[pointIdxKNNSearch[j]].x;
-                    //     matA0.at<float>(j, 1) = (*points_j)[pointIdxKNNSearch[j]].y;
-                    //     matA0.at<float>(j, 2) = (*points_j)[pointIdxKNNSearch[j]].z;
-                    // }
-                    // cv::solve( matA0, matB0, matX0, cv::DECOMP_QR );
-                    // float pa = matX0.at< float >( 0, 0 );
-                    // float pb = matX0.at< float >( 1, 0 );
-                    // float pc = matX0.at< float >( 2, 0 );
-                    // float pd = 1;
+                        // std::vector<Eigen::Vector3d> pj(NUM_MATCH_POINTS);
+                        // for ( int j = 0; j < NUM_MATCH_POINTS; j++ ){
+                        //     pj[j][0] = (*points_j)[pointIdxKNNSearch[j]].x;
+                        //     pj[j][1] = (*points_j)[pointIdxKNNSearch[j]].y;
+                        //     pj[j][2] = (*points_j)[pointIdxKNNSearch[j]].z;
+                        // }
+                        // double ori_pt_dis = sqrt( point.x * point.x + point.y * point.y + point.z * point.z);
+                        // maximum_pt_range = std::max( ori_pt_dis, maximum_pt_range );
+                        // cv::Mat matA0( NUM_MATCH_POINTS, 3, CV_32F, cv::Scalar::all( 0 ) );
+                        // cv::Mat matB0( NUM_MATCH_POINTS, 1, CV_32F, cv::Scalar::all( -1 ) );
+                        // cv::Mat matX0( NUM_MATCH_POINTS, 1, CV_32F, cv::Scalar::all( 0 ) );
+                        // for (std::size_t j = 0; j < pointIdxKNNSearch.size (); ++j){
+                        //     matA0.at<float>(j, 0) = (*points_j)[pointIdxKNNSearch[j]].x;
+                        //     matA0.at<float>(j, 1) = (*points_j)[pointIdxKNNSearch[j]].y;
+                        //     matA0.at<float>(j, 2) = (*points_j)[pointIdxKNNSearch[j]].z;
+                        // }
+                        // cv::solve( matA0, matB0, matX0, cv::DECOMP_QR );
+                        // float pa = matX0.at< float >( 0, 0 );
+                        // float pb = matX0.at< float >( 1, 0 );
+                        // float pc = matX0.at< float >( 2, 0 );
+                        // float pd = 1;
 
-                    // float ps = sqrt( pa * pa + pb * pb + pc * pc );
-                    // pa /= ps;
-                    // pb /= ps;
-                    // pc /= ps;
-                    // pd /= ps;
+                        // float ps = sqrt( pa * pa + pb * pb + pc * pc );
+                        // pa /= ps;
+                        // pb /= ps;
+                        // pc /= ps;
+                        // pd /= ps;
 
-                    // bool planeValid = true;
-                    // double m_maximum_res_dis = 0.3;
-                    // double m_planar_check_dis = 0.05;
-                    // double m_long_rang_pt_dis = 500.0;
-                    // for ( int j = 0; j < NUM_MATCH_POINTS; j++ )
-                    // {
-                    //     double planar_dis = fabs( pa * pj[j][0] + pj[j][1] + pc * pj[j][2] + pd );
-                    //     // ANCHOR -  Planar check
-                    //     if ( planar_dis > m_planar_check_dis ) // Raw 0.05
-                    //     {
-                    //         // ANCHOR - Far distance pt processing
-                    //         if ( ori_pt_dis < maximum_pt_range * 0.90 || ( ori_pt_dis < m_long_rang_pt_dis ) )
-                    //         // if(1)
-                    //         {
-                    //             planeValid = false;
-                    //             break;
-                    //         }
-                    //     }
-                    // }
-                    // if(planeValid){
-                    //     float pd2 = fabs(pa * p_j.x + pb * p_j.y + pc * p_j.z + pd);
-                    //     // ANCHOR -  Point to plane distance
-                    //     double acc_distance = ( ori_pt_dis < m_long_rang_pt_dis ) ? m_maximum_res_dis : 1.0;
-                    //     if(pd2 < acc_distance){
-                    //         DepthFactor *d = new DepthFactor(p_i, pa, pb, pc, pd);
-                    //         problem.AddResidualBlock(d, loss_function, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
-                    //     }
-                        
-                    // }
+                        // bool planeValid = true;
+                        // double m_maximum_res_dis = 0.3;
+                        // double m_planar_check_dis = 0.05;
+                        // double m_long_rang_pt_dis = 500.0;
+                        // for ( int j = 0; j < NUM_MATCH_POINTS; j++ )
+                        // {
+                        //     double planar_dis = fabs( pa * pj[j][0] + pj[j][1] + pc * pj[j][2] + pd );
+                        //     // ANCHOR -  Planar check
+                        //     if ( planar_dis > m_planar_check_dis ) // Raw 0.05
+                        //     {
+                        //         // ANCHOR - Far distance pt processing
+                        //         if ( ori_pt_dis < maximum_pt_range * 0.90 || ( ori_pt_dis < m_long_rang_pt_dis ) )
+                        //         // if(1)
+                        //         {
+                        //             planeValid = false;
+                        //             break;
+                        //         }
+                        //     }
+                        // }
+                        // if(planeValid){
+                        //     float pd2 = fabs(pa * p_j.x + pb * p_j.y + pc * p_j.z + pd);
+                        //     // ANCHOR -  Point to plane distance
+                        //     double acc_distance = ( ori_pt_dis < m_long_rang_pt_dis ) ? m_maximum_res_dis : 1.0;
+                        //     if(pd2 < acc_distance){
+                        //         DepthFactor *d = new DepthFactor(p_i, pa, pb, pc, pd);
+                        //         problem.AddResidualBlock(d, loss_function, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
+                        //     }
+                            
+                        // }
+                    }
                 }
             }
         }

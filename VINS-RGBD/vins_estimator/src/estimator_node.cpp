@@ -390,6 +390,22 @@ void process()
             std_msgs::Header header = img_msg->header;
             header.frame_id = "world";
             // utility/visualization.cpp
+            if(header.stamp.toSec() >= 1552759720.0 && FLAG == -1){
+                double p_x = estimator.Ps[WINDOW_SIZE-1].x();
+                double p_y = estimator.Ps[WINDOW_SIZE-1].y();
+                double p_z = estimator.Ps[WINDOW_SIZE-1].z();
+                Quaterniond tmp_Q = Quaterniond(estimator.Rs[WINDOW_SIZE-1]);
+                printf("BEGIN:position:%f,%f,%f\n orientation:%f,%f,%f,%f\n",p_x,p_y,p_z,tmp_Q.x(),tmp_Q.y(),tmp_Q.z(),tmp_Q.w());
+                FLAG = 1;
+            }
+            if(header.stamp.toSec() >= 1552759730.0 && FLAG == 1){
+                double p_x = estimator.Ps[WINDOW_SIZE-1].x();
+                double p_y = estimator.Ps[WINDOW_SIZE-1].y();
+                double p_z = estimator.Ps[WINDOW_SIZE-1].z();
+                Quaterniond tmp_Q = Quaterniond(estimator.Rs[WINDOW_SIZE-1]);
+                printf("END:position:%f,%f,%f\n orientation:%f,%f,%f,%f\n",p_x,p_y,p_z,tmp_Q.x(),tmp_Q.y(),tmp_Q.z(),tmp_Q.w());
+                FLAG = 2;
+            }
             pubOdometry(estimator, header);
             pubKeyPoses(estimator, header);
             pubCameraPose(estimator, header);

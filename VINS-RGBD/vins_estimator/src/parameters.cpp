@@ -25,6 +25,9 @@ double TD, TR;
 double RESOLUTION;
 int IF_DEPTH;
 double WEIGHT;
+float DISTANCE;
+double THRESHOLD;
+int FLAG = -1;
 
 template <typename T>
 T readParam(ros::NodeHandle &n, std::string name)
@@ -78,6 +81,8 @@ void readParameters(ros::NodeHandle &n)
     RESOLUTION = fsSettings["Voxel_res"];
     IF_DEPTH = fsSettings["if_depth"];
     WEIGHT = fsSettings["weight"];
+    DISTANCE = fsSettings["distance"];
+    THRESHOLD = fsSettings["threshold"];
 
     ESTIMATE_EXTRINSIC = fsSettings["estimate_extrinsic"];
     if (ESTIMATE_EXTRINSIC == 2)

@@ -22,9 +22,9 @@ bool DepthFactor::Evaluate(double const *const *parameters, double *residuals, d
     Eigen::Vector3d pts_camera_j = qic.inverse() * (pts_imu_j - tic);
 
     Eigen::Vector3d res = p_j - pts_camera_j;
+    Eigen::Map<Eigen::Vector3d> residual(residuals);
 
     residuals[0] = weight * sqrt(fabs(res[0]*res[0] + res[1]*res[1] + res[2]*res[2]));
-
 
     if (jacobians)
     {
