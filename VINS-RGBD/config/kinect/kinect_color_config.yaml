@@ -5,12 +5,14 @@
 #common parameters
 #image_topic: "/camera/color/image_raw"
 
-image_topic: "/camera/color/image_raw"
+image_topic: "/camera/rgb/image_color"
 
-imu_topic: "/camera/imu"
+imu_topic: "/imu"
+
+point_topic: "/camera/rgb/points"
 
 # depth_topic: "/camera/aligned_depth_to_color/image_raw"
-depth_topic: "/camera/aligned_depth_to_color/image_raw"
+depth_topic: "/camera/depth/image"
 output_path: "/home/lyp/vins_rgbd_output/"
 
 #pointcloud settings
@@ -31,19 +33,19 @@ image_height: 480
   #TODO modify distortion
 
 distortion_parameters:
-   k1: 1.25323e-01
-   k2: -2.51452e-01
-   p1: 7.12e-04
-   p2: 6.217e-03
+   k1: 0.0
+   k2: 0.0
+   p1: 0.0
+   p2: 0.0
 
 projection_parameters:
-   fx: 6.165911254882812e+02
-   fy: 6.166796264648438e+02
-   cx: 3.242193603515625e+02
-   cy: 2.3942701721191406e+02
+   fx: 525.0
+   fy: 525.0
+   cx: 319.5
+   cy: 239.5
 
 # Extrinsic parameter between IMU and Camera.
-estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+estimate_extrinsic: 2   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
                         # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
                         # 2  Don't know anything about extrinsic parameters. You don't need to give R,T. We will try to calibrate it. Do some rotation movement at beginning.
 #If you choose 0 or 1, you should write down the following matrix.
@@ -52,9 +54,9 @@ extrinsicRotation: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [  0.0008748, -0.0047406,  0.9999884,
-           -0.9999681, -0.0079460,  0.0008371,
-            0.0079419, -0.9999572, -0.0047474 ]
+   data: [ 0.9555984208732571, 0.28993069607529004, 0.052648357028815346,
+           -0.28759895251539375, 0.8787423668130893, 0.3809182264998312,
+           0.06417554469253936, -0.3791464680582244, 0.9231085825743297]
 
 #   0.999943        -0.00932683       0.0052792
 #   0.00945274       0.999659        -0.0243487
@@ -64,7 +66,7 @@ extrinsicTranslation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [1.30441e-05, 0.0149225, 0.000316835]
+   data: [-0.0066252337888122025, -0.03818179366280626, -0.082778405422083]
 # -0.0120648602023721  0.00217691715806723  0.0023775571025908
 #feature traker paprameters
 max_cnt: 200           # max feature number in feature tracking
@@ -82,17 +84,17 @@ keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 
 #imu parameters       The more accurate parameters you provide, the better performance
 #for handheld, wheeld
-acc_n: 0.1          # accelerometer measurement noise standard deviation. #0.2
-gyr_n: 0.01         # gyroscope measurement noise standard deviation.     #0.05
-acc_w: 0.0002         # accelerometer bias random work noise standard deviation.  #0.02
-gyr_w: 2.0e-5       # gyroscope bias random work noise standard deviation.     #4.0e-5
+acc_n: 0.0028          # accelerometer measurement noise standard deviation. #0.2
+gyr_n: 0.00016         # gyroscope measurement noise standard deviation.     #0.05
+acc_w: 0.00086         # accelerometer bias random work noise standard deviation.  #0.02
+gyr_w: 0.000022       # gyroscope bias random work noise standard deviation.     #4.0e-5
 
 ## IMU noise (Use those from VINS-mono)
-IMU.NoiseGyro: 1.7794149940431553e-03 # 3 # 2.44e-4 #1e-3 # rad/s^0.5
-IMU.NoiseAcc: 1.2540381093709233e-02 #2 # 1.47e-3 #1e-2 # m/s^1.5
-IMU.GyroWalk: 3.9583466940523015e-05 # rad/s^1.5
-IMU.AccWalk: 5.0875897222204614e-04 # m/s^2.5
-IMU.Frequency: 500.0
+# IMU.NoiseGyro: 1.7794149940431553e-03 # 3 # 2.44e-4 #1e-3 # rad/s^0.5
+# IMU.NoiseAcc: 1.2540381093709233e-02 #2 # 1.47e-3 #1e-2 # m/s^1.5
+# IMU.GyroWalk: 3.9583466940523015e-05 # rad/s^1.5
+# IMU.AccWalk: 5.0875897222204614e-04 # m/s^2.5
+# IMU.Frequency: 500.0
 
 #for tracked applications
 #acc_n: 0.5          # accelerometer measurement noise standard deviation. #0.2
@@ -101,7 +103,7 @@ IMU.Frequency: 500.0
 #gyr_w: 2.0e-5       # gyroscope bias random work noise standard deviation.     #4.0e-5
 
 
-g_norm: 9.805       # gravity magnitude
+g_norm: 9.7914       # gravity magnitude
 
 #loop closure parameters
 loop_closure: 1                    # start loop closure
@@ -123,26 +125,20 @@ visualize_imu_forward: 0        # output imu forward propogation to achieve low 
 visualize_camera_size: 0.4      # size of camera marker in RVIZ
 
 #阻断时间戳区间
-# cut_begin:  1552759580.0
-# end_end:  1552759590.0
-cut_begin: 1552759720.0
-cut_end: 1552759730.0
+# cut_begin: 1552759720.0
+# cut_end: 1552759730.0
 # cut_begin: 1552759688.0
 # cut_end: 1552759700.0
-# cut_begin: 0
-# cut_end: 0
+cut_begin: 0
+cut_end: 0
 
 #VoxelGrid滤波分辨率
-Voxel_res: 0.4
+Voxel_res: 0.5
 Voxel_res1: 0.4
 
 g_LiDAR_sampling_point_step: 3
 group_size: 8
 
 #是否融合深度点云
-if_depth: 1
+if_depth: 0
 depth_scale: 1000.0
-
-weight: 1.0
-distance: 16.0
-threshold: 8.0

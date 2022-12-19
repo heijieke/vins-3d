@@ -919,71 +919,73 @@ void Estimator::optimization()
                     {
                         Eigen::Vector3d pj((*points_j)[pointIdxKNNSearch[0]].x, (*points_j)[pointIdxKNNSearch[0]].y, (*points_j)[pointIdxKNNSearch[0]].z);
                         double weight = 1.0;
-                        // if(f_manager.feature.size() <= 50)
-                        //     weight = WEIGHT;
-                        DepthFactor *d = new DepthFactor(p_i, pj, weight);
-                        problem.AddResidualBlock(d, NULL, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
+                        if(f_manager.feature.size() <= 50)
+                            weight = WEIGHT;
+                        DepthFactor *d = new DepthFactor(p_i, pj);
+                        problem.AddResidualBlock(d, loss_function2, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
 
-                        // std::vector<Eigen::Vector3d> pj(NUM_MATCH_POINTS);
-                        // for ( int j = 0; j < NUM_MATCH_POINTS; j++ ){
-                        //     pj[j][0] = (*points_j)[pointIdxKNNSearch[j]].x;
-                        //     pj[j][1] = (*points_j)[pointIdxKNNSearch[j]].y;
-                        //     pj[j][2] = (*points_j)[pointIdxKNNSearch[j]].z;
-                        // }
-                        // double ori_pt_dis = sqrt( point.x * point.x + point.y * point.y + point.z * point.z);
-                        // maximum_pt_range = std::max( ori_pt_dis, maximum_pt_range );
-                        // cv::Mat matA0( NUM_MATCH_POINTS, 3, CV_32F, cv::Scalar::all( 0 ) );
-                        // cv::Mat matB0( NUM_MATCH_POINTS, 1, CV_32F, cv::Scalar::all( -1 ) );
-                        // cv::Mat matX0( NUM_MATCH_POINTS, 1, CV_32F, cv::Scalar::all( 0 ) );
-                        // for (std::size_t j = 0; j < pointIdxKNNSearch.size (); ++j){
-                        //     matA0.at<float>(j, 0) = (*points_j)[pointIdxKNNSearch[j]].x;
-                        //     matA0.at<float>(j, 1) = (*points_j)[pointIdxKNNSearch[j]].y;
-                        //     matA0.at<float>(j, 2) = (*points_j)[pointIdxKNNSearch[j]].z;
-                        // }
-                        // cv::solve( matA0, matB0, matX0, cv::DECOMP_QR );
-                        // float pa = matX0.at< float >( 0, 0 );
-                        // float pb = matX0.at< float >( 1, 0 );
-                        // float pc = matX0.at< float >( 2, 0 );
-                        // float pd = 1;
+            //             std::vector<Eigen::Vector3d> pj(NUM_MATCH_POINTS);
+            //             for ( int j = 0; j < NUM_MATCH_POINTS; j++ ){
+            //                 pj[j][0] = (*points_j)[pointIdxKNNSearch[j]].x;
+            //                 pj[j][1] = (*points_j)[pointIdxKNNSearch[j]].y;
+            //                 pj[j][2] = (*points_j)[pointIdxKNNSearch[j]].z;
+            //             }
+            //             double ori_pt_dis = sqrt( point.x * point.x + point.y * point.y + point.z * point.z);
+            //             maximum_pt_range = std::max( ori_pt_dis, maximum_pt_range );
+            //             cv::Mat matA0( NUM_MATCH_POINTS, 3, CV_32F, cv::Scalar::all( 0 ) );
+            //             cv::Mat matB0( NUM_MATCH_POINTS, 1, CV_32F, cv::Scalar::all( -1 ) );
+            //             cv::Mat matX0( NUM_MATCH_POINTS, 1, CV_32F, cv::Scalar::all( 0 ) );
+            //             for (std::size_t j = 0; j < pointIdxKNNSearch.size (); ++j){
+            //                 matA0.at<float>(j, 0) = (*points_j)[pointIdxKNNSearch[j]].x;
+            //                 matA0.at<float>(j, 1) = (*points_j)[pointIdxKNNSearch[j]].y;
+            //                 matA0.at<float>(j, 2) = (*points_j)[pointIdxKNNSearch[j]].z;
+            //             }
+            //             cv::solve( matA0, matB0, matX0, cv::DECOMP_QR );
+            //             float pa = matX0.at< float >( 0, 0 );
+            //             float pb = matX0.at< float >( 1, 0 );
+            //             float pc = matX0.at< float >( 2, 0 );
+            //             float pd = 1;
 
-                        // float ps = sqrt( pa * pa + pb * pb + pc * pc );
-                        // pa /= ps;
-                        // pb /= ps;
-                        // pc /= ps;
-                        // pd /= ps;
+            //             float ps = sqrt( pa * pa + pb * pb + pc * pc );
+            //             pa /= ps;
+            //             pb /= ps;
+            //             pc /= ps;
+            //             pd /= ps;
 
-                        // bool planeValid = true;
-                        // double m_maximum_res_dis = 0.3;
-                        // double m_planar_check_dis = 0.05;
-                        // double m_long_rang_pt_dis = 500.0;
-                        // for ( int j = 0; j < NUM_MATCH_POINTS; j++ )
-                        // {
-                        //     double planar_dis = fabs( pa * pj[j][0] + pj[j][1] + pc * pj[j][2] + pd );
-                        //     // ANCHOR -  Planar check
-                        //     if ( planar_dis > m_planar_check_dis ) // Raw 0.05
-                        //     {
-                        //         // ANCHOR - Far distance pt processing
-                        //         if ( ori_pt_dis < maximum_pt_range * 0.90 || ( ori_pt_dis < m_long_rang_pt_dis ) )
-                        //         // if(1)
-                        //         {
-                        //             planeValid = false;
-                        //             break;
-                        //         }
-                        //     }
-                        // }
-                        // if(planeValid){
-                        //     float pd2 = fabs(pa * p_j.x + pb * p_j.y + pc * p_j.z + pd);
-                        //     // ANCHOR -  Point to plane distance
-                        //     double acc_distance = ( ori_pt_dis < m_long_rang_pt_dis ) ? m_maximum_res_dis : 1.0;
-                        //     if(pd2 < acc_distance){
-                        //         DepthFactor *d = new DepthFactor(p_i, pa, pb, pc, pd);
-                        //         problem.AddResidualBlock(d, loss_function, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
-                        //     }
+            //             bool planeValid = true;
+            //             double m_maximum_res_dis = 0.3;
+            //             double m_planar_check_dis = 0.05;
+            //             double m_long_rang_pt_dis = 500.0;
+            //             for ( int j = 0; j < NUM_MATCH_POINTS; j++ )
+            //             {
+            //                 double planar_dis = fabs( pa * pj[j][0] + pj[j][1] + pc * pj[j][2] + pd );
+            //                 // ANCHOR -  Planar check
+            //                 if ( planar_dis > m_planar_check_dis ) // Raw 0.05
+            //                 {
+            //                     // ANCHOR - Far distance pt processing
+            //                     if ( ori_pt_dis < maximum_pt_range * 0.90 || ( ori_pt_dis < m_long_rang_pt_dis ) )
+            //                     // if(1)
+            //                     {
+            //                         planeValid = false;
+            //                         break;
+            //                     }
+            //                 }
+            //             }
+            //             if(planeValid){
+            //                 float pd2 = fabs(pa * p_j.x + pb * p_j.y + pc * p_j.z + pd);
+            //                 // ANCHOR -  Point to plane distance
+            //                 double acc_distance = ( ori_pt_dis < m_long_rang_pt_dis ) ? m_maximum_res_dis : 1.0;
+            //                 if(pd2 < acc_distance){
+            //                     DepthFactor *d = new DepthFactor(p_i, pa, pb, pc, pd);
+            //                     problem.AddResidualBlock(d, loss_function, para_Pose[i], para_Pose[i + 1], para_Ex_Pose[0]);
+            //                 }
                             
-                        // }
+            //            }
+
+
                     }
                 }
-            }
+             }
         }
     }
  

@@ -333,30 +333,32 @@ void img_callback(const sensor_msgs::ImageConstPtr &color_msg, const sensor_msgs
         }
         else
         {
-          pcl::PointCloud< PointType > pl_corn, pl_surf;
-          vector< orgtype >            types;
-          uint                         plsize = pl.size() - 1;
-          pl_corn.reserve( plsize );
-          pl_surf.reserve( plsize );
-          types.resize( plsize + 1 );
-          double vx,vy,vz;
-          for ( uint i = 0; i < plsize; i++ )
-          {
-            types[ i ].range = pl[ i ].x;
-            vx = pl[ i ].x - pl[ i + 1 ].x;
-            vy = pl[ i ].y - pl[ i + 1 ].y;
-            vz = pl[ i ].z - pl[ i + 1 ].z;
-            types[ i ].dista = vx * vx + vy * vy + vz * vz;
-          }
-          // plsize++;
-          types[ plsize ].range = sqrt( pl[ plsize ].x * pl[ plsize ].x + pl[ plsize ].y * pl[ plsize ].y );
-          give_feature( pl, types, pl_corn, pl_surf );
           pcl::PointCloud<PointType>::Ptr inputCloud = boost::make_shared<pcl::PointCloud<PointType>>(pl);
           pcl::PointCloud<PointType>::Ptr filteredCloud = boost::make_shared<pcl::PointCloud<PointType>>();
           pcl::VoxelGrid<PointType> filter;
           filter.setInputCloud(inputCloud);
           filter.setLeafSize(RESOLUTION, RESOLUTION, RESOLUTION);
           filter.filter(*filteredCloud);
+
+        //   pcl::PointCloud< PointType > pl_corn, pl_surf;
+        //   vector< orgtype >            types;
+        //   uint                         plsize = filteredCloud->size() - 1;
+        //   pl_corn.reserve( plsize );
+        //   pl_surf.reserve( plsize );
+        //   types.resize( plsize + 1 );
+        //   double vx,vy,vz;
+        //   for ( uint i = 0; i < plsize; i++ )
+        //   {
+        //     types[ i ].range = (*filteredCloud)[ i ].x;
+        //     vx = (*filteredCloud)[ i ].x - (*filteredCloud)[ i + 1 ].x;
+        //     vy = (*filteredCloud)[ i ].y - (*filteredCloud)[ i + 1 ].y;
+        //     vz = (*filteredCloud)[ i ].z - (*filteredCloud)[ i + 1 ].z;
+        //     types[ i ].dista = vx * vx + vy * vy + vz * vz;
+        //   }
+        //   // plsize++;
+        //   types[ plsize ].range = sqrt( pl[ plsize ].x * pl[ plsize ].x + pl[ plsize ].y * pl[ plsize ].y );
+        //   give_feature( *filteredCloud, types, pl_corn, pl_surf );
+
           sensor_msgs::PointCloud2 color_points;
           sensor_msgs::PointCloud2 color_points_full;
           pcl::toROSMsg(*filteredCloud, color_points);
