@@ -168,18 +168,20 @@ void OBCamera::setupPublishers() {
   imageG_publishers_ = it.advertise("gray/image_raw", 1000000);
 }
 
-
 void OBCamera::startPipeline() {
   accelSensor_ = device_->getSensorList()->getSensor(OB_SENSOR_ACCEL);
   gyroSensor_ = device_->getSensorList()->getSensor(OB_SENSOR_GYRO);
-  double pi_360 = 2*3.1415926/360; //角度转换为弧度
-  double g=9.80665;//重力加速度
   if(gyroSensor_) {
     // 获取配置列表
     auto profiles = gyroSensor_->getStreamProfileList();
     // 选择第一个配置开流
     auto profile = profiles->getProfile(0);
-    gyroSensor_->start(profile, [this,&pi_360](std::shared_ptr<ob::Frame> frame) {
+    Eigen::Vector3f Bias(0.000879848,-0.00812058,0.0121624); //Bias vector
+    Eigen::Matrix3f Scale; //Scale matrix
+    Scale << 4.89137, 0.0, 0.0, 0.0, 2.953, 0.0, 0.0, 0.0, 3.36012;
+    Eigen::Matrix3f M; //Misalignment matrix
+    M << 1.0, 0.166283, -0.552403, -0.0586706, 1.0, -0.130592, 0.0349845, 0.211361, 1.0;
+    gyroSensor_->start(profile, [this,Bias,Scale,M](std::shared_ptr<ob::Frame> frame) {
       auto timestamp = orbbec_camera::frameTimeStampToROSTime(frame->systemTimeStamp());
       auto gyroFrame = frame->as<ob::GyroFrame>();
       // if(gyroFrame != nullptr && time/10 > last_time){
@@ -194,9 +196,14 @@ void OBCamera::startPipeline() {
         auto gyro_value = gyroFrame->value();
         imu_msg_.header.stamp = timestamp;
         imu_msg_.header.frame_id = "imuFrame";
-        imu_msg_.angular_velocity.x = pi_360*gyro_value.x;
-        imu_msg_.angular_velocity.y = pi_360*gyro_value.y;
-        imu_msg_.angular_velocity.z = pi_360*gyro_value.z;
+        float x = gyro_value.x * 3.1415926 / 180.0;
+        float y = gyro_value.y * 3.1415926 / 180.0;
+        float z = gyro_value.z * 3.1415926 / 180.0;
+        Eigen::Vector3f angular(x,y,z);
+        Eigen::Vector3f result = M*Scale*(angular - Bias);
+        imu_msg_.angular_velocity.x = result[0];
+        imu_msg_.angular_velocity.y = result[1];
+        imu_msg_.angular_velocity.z = result[2];
       }
     });
   }else {
@@ -208,7 +215,12 @@ void OBCamera::startPipeline() {
     auto profiles = accelSensor_->getStreamProfileList();
     // 选择第一个配置开流
     auto profile = profiles->getProfile(0);
-    accelSensor_->start(profile, [this, &g](std::shared_ptr<ob::Frame> frame) {
+    Eigen::Vector3f Bias(0.00122873,0.014862,-0.21806); //Bias vector
+    Eigen::Matrix3f Scale; //Scale matrix
+    Scale << 1.09253, 0.0, 0.0, 0.0, 1.08463, 0.0, 0.0, 0.0, 1.09072;
+    Eigen::Matrix3f M; //Misalignment matrix
+    M << 1.0, 0.116077,  -0.0552362, 0.0, 1.0, 0.00464554, -0.0, 0.0, 1.0;
+    accelSensor_->start(profile, [this,Bias,Scale,M](std::shared_ptr<ob::Frame> frame) {
       auto accelFrame = frame->as<ob::AccelFrame>();
       // auto time = frame->timeStamp();
       // if(accelFrame != nullptr && time/10 > last_time){
@@ -224,9 +236,15 @@ void OBCamera::startPipeline() {
 
       if(accelFrame != nullptr){
         auto accel_value = accelFrame->value();
-        imu_msg_.linear_acceleration.x = accel_value.x*g;
-        imu_msg_.linear_acceleration.y = accel_value.y*g;
-        imu_msg_.linear_acceleration.z = accel_value.z*g;
+        float x = accel_value.x*(-9.8);
+        float y = accel_value.y*(-9.8);
+        float z = accel_value.z*(-9.8);
+        Eigen::Vector3f accel(x,y,z);
+        Eigen::Vector3f result = M*Scale*(accel - Bias);
+        imu_msg_.linear_acceleration.x = result[0];
+        imu_msg_.linear_acceleration.y = result[1];
+        imu_msg_.linear_acceleration.z = result[2];
+        imu_msg_.orientation_covariance={-1,0,0,0,0,0,0,0,0};
         imu_publisher_.publish(imu_msg_);
       }
     });

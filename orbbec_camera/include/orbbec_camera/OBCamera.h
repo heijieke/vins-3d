@@ -19,6 +19,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <condition_variable>
+#include <Eigen/Core>
 
 
 #define STREAM_NAME(sip)                                                                       \

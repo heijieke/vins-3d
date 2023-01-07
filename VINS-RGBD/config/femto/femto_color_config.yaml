@@ -33,16 +33,26 @@ image_height: 480
   #TODO modify distortion
 
 distortion_parameters:
-   k1: 0.020034726709127426
-   k2: -0.08602049946784973
-   p1: -0.00019022979540750384
-   p2: 0.00013130763545632362
+   # k1: 0.020034726709127426
+   # k2: -0.08602049946784973
+   # p1: -0.00019022979540750384
+   # p2: 0.00013130763545632362
+
+   k1: 0.01602191698305401
+   k2: -0.06636235128476678
+   p1: 0.00102161038552525
+   p2: 0.00018002089118429818
 
 projection_parameters:
-   fx: 520.2527465820312
-   fy: 520.2527465820312
-   cx: 309.72003173828125
-   cy: 237.07284545898438
+   # fx: 520.2527465820312
+   # fy: 520.2527465820312
+   # cx: 309.72003173828125
+   # cy: 237.07284545898438
+
+   fx: 517.232285750096
+   fy: 515.0296859162651
+   cx: 309.8322153592324
+   cy: 241.31691788325548
 
 # Extrinsic parameter between IMU and Camera.
 estimate_extrinsic: 1   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
@@ -54,9 +64,9 @@ extrinsicRotation: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [ 0.9555984208732571, 0.28993069607529004, 0.052648357028815346,
-           -0.28759895251539375, 0.8787423668130893, 0.3809182264998312,
-           0.06417554469253936, -0.3791464680582244, 0.9231085825743297]
+   data: [0.9747450602501946, 0.21964796781315302, 0.04033407682588784,
+          -0.21529052075538516, 0.9722390314642857, -0.0916583731595906,
+          -0.05934693918577101, 0.08066000206384685, 0.9949733186756017]
 
 #   0.999943        -0.00932683       0.0052792
 #   0.00945274       0.999659        -0.0243487
@@ -66,7 +76,7 @@ extrinsicTranslation: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [-0.0066252337888122025, -0.03818179366280626, -0.082778405422083]
+   data: [0.06107711907666765,-0.008858041767732276, 0.09515624749777886]
 # -0.0120648602023721  0.00217691715806723  0.0023775571025908
 #feature traker paprameters
 max_cnt: 200           # max feature number in feature tracking
@@ -84,10 +94,10 @@ keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
 
 #imu parameters       The more accurate parameters you provide, the better performance
 #for handheld, wheeld
-acc_n: 0.0010425923837839013          # accelerometer measurement noise standard deviation. #0.2
-gyr_n: 0.060091690697306056         # gyroscope measurement noise standard deviation.     #0.05
-acc_w: 1.2097443290232942e-05         # accelerometer bias random work noise standard deviation.  #0.02
-gyr_w: 0.0007794251892344005       # gyroscope bias random work noise standard deviation.     #4.0e-5
+acc_n: 0.010479936407188575          # accelerometer measurement noise standard deviation. #0.2
+gyr_n: 0.004038235565328463         # gyroscope measurement noise standard deviation.     #0.05
+acc_w: 0.00017550861436602412         # accelerometer bias random work noise standard deviation.  #0.02
+gyr_w: 6.496975019491633e-05       # gyroscope bias random work noise standard deviation.     #4.0e-5
 
 ## IMU noise (Use those from VINS-mono)
 # IMU.NoiseGyro: 1.7794149940431553e-03 # 3 # 2.44e-4 #1e-3 # rad/s^0.5
@@ -103,7 +113,7 @@ gyr_w: 0.0007794251892344005       # gyroscope bias random work noise standard d
 #gyr_w: 2.0e-5       # gyroscope bias random work noise standard deviation.     #4.0e-5
 
 
-g_norm: 9.7914       # gravity magnitude
+g_norm: 9.8       # gravity magnitude
 
 #loop closure parameters
 loop_closure: 1                    # start loop closure
@@ -113,7 +123,7 @@ pose_graph_save_path: "/home/lyp/vins_rgbd_output/pose_graph/" # save and load p
 
 #unsynchronization parameters
 estimate_td: 1                      # online estimate time offset between camera and imu
-td: 0.000                           # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+td: 0.0                       # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
 
 #rolling shutter parameters
 rolling_shutter: 1                      # 0: global shutter camera, 1: rolling shutter camera
